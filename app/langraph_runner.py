@@ -2,10 +2,10 @@ from langgraph.graph import StateGraph, END
 from pydantic import BaseModel
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
-import asyncio
 
-from app.tools.journalling_prompt_generator import generate_prompt
-from app.tools.journal_store import save_journal_entry
+from app.tools.journaling.journalling_prompt_generator import generate_prompt
+from app.tools.journaling.journal_store import save_journal_entry
+from app.tools.journaling.prompt_utils import classify_journal_input
 
 # Load environment variables
 load_dotenv()
@@ -48,14 +48,12 @@ async def selfcare_node(state: State) -> State:
 
 # Journaling agent node Stub
 async def journaling_node(state: State) -> State:
-    user_input = state.input.lower()
+    classification = await classify_journal_input(state.input)
 
-    if "prompt" in user_input or "give me" in user_input:
-        # Generate journaling prompt
+    if classification == "prompt_request":
         prompt = await generate_prompt(state.input)
         response = f"[JournalingAgent] Prompt: {prompt}"
     else:
-        # Save entry to DB
         await save_journal_entry(content=state.input)
         response = "[JournalingAgent] Entry saved. Feel free to share more or ask for a prompt."
 
