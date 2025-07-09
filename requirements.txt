@@ -1,1 +1,13 @@
-fastapi
+fastapi  # Web framework to create API routes for your backend (e.g., /chat)
+
+uvicorn[standard]  # ASGI server to run FastAPI app locally or in production
+
+openai  # Official OpenAI SDK to call models like gpt-4.1-mini for LLM tasks
+
+langgraph  # Agent orchestration engine for building multi-agent workflows
+
+langchain  # Framework for building LLM pipelines, tools, and memory systems
+
+langchain-openai  # LangChain wrapper for OpenAI models (chat, embeddings, etc.)
+
+tiktoken  # Tokenizer used to count or split text for OpenAI models (important for chunking and token limits)
