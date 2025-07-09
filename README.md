@@ -130,6 +130,9 @@ requirements.txt
 
 ## License
 
-MIT License
+This project is intended for educational and non-commercial use only.
 
-Built with care to support mental clarity, reflection, and gentle growth.
+It is not a substitute for professional mental health advice, diagnosis, or treatment.
+
+Use responsibly and at your own discretion.
+
