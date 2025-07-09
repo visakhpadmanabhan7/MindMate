@@ -4,6 +4,9 @@ from openai import AsyncOpenAI
 from dotenv import load_dotenv
 import asyncio
 
+from app.tools.journalling_prompt_generator import generate_prompt
+from app.tools.journal_store import save_journal_entry
+
 # Load environment variables
 load_dotenv()
 
@@ -45,7 +48,17 @@ async def selfcare_node(state: State) -> State:
 
 # Journaling agent node Stub
 async def journaling_node(state: State) -> State:
-    response = "[JournalingAgent] Prompt: What's something you felt strongly about today?"
+    user_input = state.input.lower()
+
+    if "prompt" in user_input or "give me" in user_input:
+        # Generate journaling prompt
+        prompt = await generate_prompt(state.input)
+        response = f"[JournalingAgent] Prompt: {prompt}"
+    else:
+        # Save entry to DB
+        await save_journal_entry(content=state.input)
+        response = "[JournalingAgent] Entry saved. Feel free to share more or ask for a prompt."
+
     return state.model_copy(update={"response": response})
 
 # Define LangGraph

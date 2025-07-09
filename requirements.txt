@@ -11,3 +11,9 @@ langchain  # Framework for building LLM pipelines, tools, and memory systems
 langchain-openai  # LangChain wrapper for OpenAI models (chat, embeddings, etc.)
 
 tiktoken  # Tokenizer used to count or split text for OpenAI models (important for chunking and token limits)
+
+sqlalchemy # ORM for database interactions, useful for managing user data and chat history
+
+asyncpg # Async PostgreSQL driver for SQLAlchemy, enabling efficient database operations
+
+greenlet
