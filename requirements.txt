@@ -17,3 +17,5 @@ sqlalchemy # ORM for database interactions, useful for managing user data and ch
 asyncpg # Async PostgreSQL driver for SQLAlchemy, enabling efficient database operations
 
 greenlet
+
+bumpver  # Version management tool to handle versioning of your project
