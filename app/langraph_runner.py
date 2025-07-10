@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from app.tools.journaling.journalling_prompt_generator import generate_prompt
 from app.tools.journaling.journal_store import save_journal_entry
 from app.tools.journaling.prompt_utils import classify_journal_input
+from app.tools.selfcare.mood_tracker import log_mood, classify_mood
+from app.tools.selfcare.selcare_input_classifier import classify_selfcare_input
 
 # Load environment variables
 load_dotenv()
@@ -43,7 +45,22 @@ def route(state: State) -> str:
 
 # SelfCare agent node Stub
 async def selfcare_node(state: State) -> State:
-    response = f"[SelfCareAgent] You said: {state.input}. Here's a grounding tip: Take a deep breath and count to 4."
+    user_input = state.input
+    tool_class = await classify_selfcare_input(user_input)
+
+    if tool_class == "mood":
+        mood_label = await classify_mood(user_input)
+        await log_mood(user_input, mood_label)
+        response = f"[SelfCareAgent • MoodTracker] Mood logged as '{mood_label}'. You're not alone — thank you for checking in."
+
+    elif tool_class == "reminder":
+        # Stub: Reminder tool coming soon
+        response = "[SelfCareAgent • Reminder] This feature is not available yet. Stay tuned!"
+
+    else:  # tool_class == "advice"
+        # Stub: RAGTool advice coming soon
+        response = "[SelfCareAgent • Advice] This feature is under development. Thanks for your patience!"
+
     return state.model_copy(update={"response": response})
 
 # Journaling agent node Stub
