@@ -15,7 +15,7 @@ async def chat(request: Request):
     # Run the LangGraph flow
     result = await app_flow.ainvoke({"input": user_input})
 
-    return {"response": result.get("response")}
+    return result
 
 @app.get("/get_all_sample_records")
 async def get_all_sample_records():

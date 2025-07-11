@@ -1,6 +1,5 @@
 from datetime import datetime
 from sqlalchemy import insert
-
 from app.db.engine import engine
 from app.db.models import journal_entries
 
