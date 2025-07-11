@@ -1,2 +1,24 @@
+[project]
+name = "mindmate"
+version = "2.1.0"
+description = "A mental health agent with journaling and self-care support"
+authors = ["Your Name <you@example.com>"]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "openai",
+    "langgraph",
+    "langchain",
+    "langchain-openai",
+    "tiktoken",
+    "sqlalchemy",
+    "asyncpg",
+    "greenlet",
+    "bumpver"
+]
+requires-python = ">=3.10"
+
 [tool.mindmate]
 version = "2.1.0"
+description = "Custom metadata for MindMate agent orchestration"
+entrypoint = "app.main:app"
