@@ -1,44 +1,28 @@
 from langgraph.graph import StateGraph, END
 from pydantic import BaseModel
-from openai import AsyncOpenAI
-from dotenv import load_dotenv
-
+from app.core.openai_client import client
+from app.prompts.prompt_texts import INTENT_DETECTOR
 from app.tools.journaling.journalling_prompt_generator import generate_prompt
 from app.tools.journaling.journal_store import save_journal_entry
 from app.tools.journaling.prompt_utils import classify_journal_input
 from app.tools.selfcare.mood_tracker import log_mood, classify_mood
 from app.tools.selfcare.selcare_input_classifier import classify_selfcare_input
+from app.core.openai_utils import run_classification_prompt
 
-# Load environment variables
-load_dotenv()
-
-# Async OpenAI client
-client = AsyncOpenAI()
 
 # shared state model
 class State(BaseModel):
     input: str
     intent: str | None = None
     response: str | None = None
+    tool_class: str | None = None
 
 # Async Intent Detection Node
 async def detect_intent(state: State) -> State:
     user_input = state.input
 
-    response = await client.chat.completions.create(
-        model="gpt-4.1-nano",
-        messages=[
-            {
-                "role": "system",
-                "content": "Classify this input as either 'selfcare' or 'journal'. Only return one of those two words.",
-            },
-            {"role": "user", "content": user_input},
-        ],
-    )
-
-    intent = response.choices[0].message.content.strip().lower()
+    intent = await run_classification_prompt(INTENT_DETECTOR, user_input)
     return state.model_copy(update={"intent": intent})
-
 # Routing logic
 def route(state: State) -> str:
     return state.intent
@@ -51,7 +35,7 @@ async def selfcare_node(state: State) -> State:
     if tool_class == "mood":
         mood_label = await classify_mood(user_input)
         await log_mood(user_input, mood_label)
-        response = f"[SelfCareAgent • MoodTracker] Mood logged as '{mood_label}'. You're not alone — thank you for checking in."
+        response = f"Mood logged as '{mood_label}'. You're not alone — thank you for checking in."
 
     elif tool_class == "reminder":
         # Stub: Reminder tool coming soon
@@ -61,20 +45,23 @@ async def selfcare_node(state: State) -> State:
         # Stub: RAGTool advice coming soon
         response = "[SelfCareAgent • Advice] This feature is under development. Thanks for your patience!"
 
-    return state.model_copy(update={"response": response})
-
+    return state.model_copy(update={"response": response,
+                                    "intent": state.intent,
+                                    "tool_class": tool_class})
 # Journaling agent node Stub
 async def journaling_node(state: State) -> State:
-    classification = await classify_journal_input(state.input)
+    classify_journal = await classify_journal_input(state.input)
 
-    if classification == "prompt_request":
+    if classify_journal == "prompt_request":
         prompt = await generate_prompt(state.input)
-        response = f"[JournalingAgent] Prompt: {prompt}"
+        response = f"{prompt}"
     else:
         await save_journal_entry(content=state.input)
-        response = "[JournalingAgent] Entry saved. Feel free to share more or ask for a prompt."
+        response = "Entry saved as journal. Feel free to share more or ask for a prompt."
 
-    return state.model_copy(update={"response": response})
+    return state.model_copy(update={"response": response,
+                                    "intent": state.intent,
+                                    "tool_class": classify_journal})
 
 # Define LangGraph
 graph = StateGraph(State)
