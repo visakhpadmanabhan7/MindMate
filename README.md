@@ -1,138 +1,249 @@
-# MINDMATE – AI Agent Mental Health Companion
+# MINDMATE – AI‑Powered Mental Wellness Companion
 
-MINDMATE is an AI-powered mental wellness assistant that helps users reflect, journal, and get supportive self-care guidance — all driven by multi-agent LangGraph architecture and GPT-based reasoning.
+MindMate is a mental‑health companion that helps users reflect, journal and get supportive self‑care guidance. It orchestrates multiple GPT‑based tools through a LangGraph workflow, logs entries and moods to a PostgreSQL database, and exposes a simple FastAPI interface.
 
 ## Features
 
-* SelfCareAgent (Agentic RAG) Understands mental health queries and provides safe, grounded advice using tools like:
+### 🧠 Intent Detection  
+- Classifies whether user input is a journaling request or a self‑care query using an LLM prompt.
 
-  * RAGTool (CBT/WHO document retrieval via pgvector)
-  * MoodTrackerTool (logs mood to Postgres)
-  * WellnessReminderTool (schedules check-ins)
-  * Built-in prompt safety guardrails
+### 📓 Journaling Agent  
+- Generates reflective prompts.
+- Stores journal entries in a PostgreSQL database.
+- Classifies input as a journal entry or a prompt request.
 
-* JournalingAgent Encourages self-reflection and emotional awareness through:
+### ❤️ Self‑Care Agent  
+- Classifies input into mood tracking, wellness reminders, or advice.
+- Tracks moods and stores them with timestamps.
+- Stub tools for reminders and advice (under development).
 
-  * PromptGeneratorTool (GPT-based reflective questions)
-  * JournalStoreTool (stores entries in Postgres)
+### 🛠 Tech Stack  
+- **FastAPI** + **Uvicorn**: REST API.
+- **LangGraph** + **LangChain**: Tool routing and orchestration.
+- **OpenAI API**: All GPT calls (classification and generation).
+- **PostgreSQL** + **pgvector**: Logging journals and moods.
+- **SQLAlchemy (async)**: Database access.
 
-## Agent Flow (LangGraph)
+---
 
-User Input ↓ Intent Detection (gpt-4.1-nano) ↓ Journaling      Self-Care ↓              ↓ Prompt / Save   Advice / Tools
+## Architecture
 
-## Tech Stack
-
-| Layer         | Tool / Library             |
-| ------------- | -------------------------- |
-| API Server    | FastAPI                    |
-| Agent Engine  | LangGraph                  |
-| LLMs          | OpenAI (gpt-4.1-nano/mini) |
-| Vector DB     | pgvector + PostgreSQL      |
-| Relational DB | PostgreSQL (Dockerized)    |
-| ORM/Access    | SQLAlchemy (async)         |
-| Env Mgmt      | python-dotenv              |
-
-## Getting Started
-
-### 1. Clone the repo
-
-```
-git clone https://github.com/yourusername/mindmate_proj.git
-cd mindmate_proj
-```
-
-### 2. Set up .env
-
-```
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mindmate
-OPENAI_API_KEY=your-key-here
+```text
+User Input
+    ↓
+Intent Detection (journal or self‑care)
+    ↓
+──────────────────────────────
+↓                             ↓
+Journaling Agent          Self‑Care Agent
+↓                             ↓
+Prompt or entry          Mood/reminder/advice
+↓                             ↓
+Database log              Mood log
 ```
 
-### 3. Start Postgres with pgvector
-
-```
-docker-compose up -d
-```
-
-### 4. Set up the database
-
-```
-python app/db/setup_db.py
-```
-
-### 5. Install dependencies
-
-```
-pip install -r requirements.txt
-```
-
-### 6. Run the API server
-
-```
-uvicorn app.main:app --reload
-```
-
-## Example Requests
-
-### Journal Entry
-
-```
-POST /chat
-{
-  "message": "Today was a rough day"
-}
-
-Saves entry to DB with gentle response
-```
-
-### Prompt Request
-
-```
-{
-  "message": "Give me a prompt to journal"
-}
-
-GPT-generated reflective prompt
-```
-
-### Self-Care Advice
-
-```
-{
-  "message": "How do I reduce anxiety?"
-}
-
-Grounded, safe tip using SelfCareAgent
-```
+---
 
 ## Project Structure
 
-mindmate\_proj/
+| Path                      | Purpose                                  |
+| ------------------------- | ---------------------------------------- |
+| `app/main.py`             | FastAPI app + API routes                 |
+| `app/langraph_runner.py`  | LangGraph definition & tool wiring       |
+| `app/core/`               | OpenAI client & prompt utils             |
+| `app/prompts/`            | Prompt templates                         |
+| `app/tools/journaling/`   | Journal logic: prompt generator, storage |
+| `app/tools/selfcare/`     | Mood tracking, input classification      |
+| `app/db/`                 | Database models, setup, views            |
 
+---
+
+## Database Models
+
+### journal_entries  
+- `id`: UUID  
+- `user_id`: Text  
+- `content`: Text  
+- `created_at`: Timestamp
+
+### mood_logs  
+- `id`: UUID  
+- `user_id`: Text  
+- `message`: Text  
+- `mood_label`: Text  
+- `timestamp`: Timestamp
+
+---
+
+## Setup Instructions
+
+### 1. Clone the Repo
+```bash
+git clone https://github.com/visakhpadmanabhan7/MindMate.git
+cd MindMate
 ```
-app/
-    langraph_runner.py       - LangGraph agents and routing
-    main.py                  - FastAPI server
-    db/                      - DB setup scripts
-    tools/                   - Journaling and RAG tools
 
-docker-compose.yml           - pgvector-enabled Postgres
-.env                         - Secrets and config
-requirements.txt
+### 2. Environment Setup
+Create a `.env` file with the following:
+```env
+OPENAI_API_KEY=your_key_here
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mindmate
 ```
 
-## Coming Soon
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
 
-* Agentic RAG with document embedding and retrieval
-* Daily wellness reminders via Telegram
-* Mood tracking history
-* Local frontend with Streamlit or Chainlit
+### 4. Run PostgreSQL (via Docker)
+```bash
+docker-compose up -d
+```
 
-## License
+### 5. Initialize DB
+```bash
+python app/db/setup_db.py
+```
 
-This project is intended for educational and non-commercial use only.
+### 6. Start the API Server
+```bash
+uvicorn app.main:app --reload
+```
 
-It is not a substitute for professional mental health advice, diagnosis, or treatment.
+---
 
-Use responsibly and at your own discretion.
+## API Endpoints
 
+### `POST /chat`
+```json
+{
+  "message": "I feel overwhelmed today."
+}
+```
+Returns:
+```json
+{
+  "response": "Your entry has been saved. Would you like a prompt?",
+  "intent": "journal",
+  "tool_class": "entry"
+}
+```
+
+### `GET /get_all_sample_records`
+Returns last 5 journal entries and mood logs.
+
+### `GET /reset_state`
+Drops and recreates database tables (for dev/test).
+
+---
+
+## Roadmap
+
+- [ ] Implement wellness reminders
+- [ ] Add RAG-based self-care advice with pgvector
+- [ ] Visual frontend (Streamlit or Chainlit)
+- [ ] Mood tracking visualization
+
+---
+
+## Disclaimer
+
+MindMate is not a replacement for professional mental health care. It is a research tool designed for self-reflection and educational use. For medical or mental health emergencies, seek professional help.
+
+---
+
+
+
+## API Endpoints
+
+### `POST /chat`
+Sends a message to MindMate and returns a structured response based on the detected intent.
+
+#### Example 1 – Journal Entry
+**Request:**
+```json
+{
+  "message": "Today was a bad dat at work. i could not do a lot of work"
+}
+```
+
+**Response:**
+```json
+{
+  "intent": "journal",
+  "response": "Entry saved as journal. Feel free to share more or ask for a prompt.",
+  "tool_class": "entry"
+}
+```
+
+#### Example 2 – Ask for a journaling prompt
+**Request:**
+```json
+{
+  "message": "Can you give me something to write about?"
+}
+```
+
+**Response:**
+```json
+{
+  "response": "Here's a prompt: What's something you've learned about yourself recently?",
+  "intent": "journal",
+  "tool_class": "prompt_request"
+}
+```
+
+#### Example 3 – Mood tracking
+**Request:**
+```json
+{
+  "message": "I’ve been feeling super anxious all day."
+}
+```
+
+**Response:**
+```json
+{
+  "response": "Got it. I’ve logged your mood as 'anxious'. Take a moment to breathe.",
+  "intent": "selfcare",
+  "tool_class": "mood"
+}
+```
+
+---
+
+### `GET /get_all_sample_records`
+Fetches the latest 5 entries from both `journal_entries` and `mood_logs`.
+
+**Response:**
+```json
+{
+  "journal_entries": [
+    {
+      "user_id": "user_1",
+      "content": "Today was a hard day at work...",
+      "created_at": "2025-07-24T10:42:11"
+    }
+  ],
+  "mood_logs": [
+    {
+      "user_id": "user_1",
+      "message": "I feel burnt out",
+      "mood_label": "exhausted",
+      "timestamp": "2025-07-24T10:43:00"
+    }
+  ]
+}
+```
+
+---
+
+### `GET /reset_state`
+Drops and recreates the `journal_entries` and `mood_logs` tables. Useful for resetting the app during development or testing.
+
+**Response:**
+```json
+{
+  "status": "reset_successful"
+}
+```
