@@ -1,7 +1,5 @@
 from datetime import datetime
-from openai import AsyncOpenAI
 from sqlalchemy import insert
-from dotenv import load_dotenv
 
 from app.core.openai_utils import run_classification_prompt
 from app.db.models import mood_logs
