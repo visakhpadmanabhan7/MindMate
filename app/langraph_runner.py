@@ -8,6 +8,7 @@ from app.tools.selfcare.mood_tracker import log_mood, classify_mood
 from app.tools.selfcare.selcare_input_classifier import classify_selfcare_input
 from app.core.openai_utils import run_classification_prompt
 from app.tools.selfcare.wellness_reminder import set_reminder
+from app.tools.selfcare.rag_tool import get_cbt_recommendation
 
 
 # shared state model
@@ -32,14 +33,26 @@ def route(state: State) -> str:
 # SelfCare agent node Stub
 async def selfcare_node(state: State) -> State:
     user_input = state.input
+    user_id = state.user_id
+
     tool_class = await classify_selfcare_input(user_input)
+
     if tool_class == "mood":
+        # Step 1: Log mood
         mood_label = await classify_mood(user_input)
-        await log_mood(message=user_input, mood_label=mood_label,user_id=state.user_id)
-        response = f"Mood logged as '{mood_label}'. You're not alone — thank you for checking in."
+        await log_mood(message=user_input, mood_label=mood_label, user_id=user_id)
+
+        # Step 2: Use RAG to give support
+        advice = await get_cbt_recommendation(f"What can I do if I feel {mood_label}?")
+        response = (
+            f" Mood logged as '{mood_label}'.\n\n"
+            f" Here's something that might help:\n\n"
+            f"{advice}"
+        )
 
     elif tool_class == "advice":
-        response = "[SelfCareAgent • Advice] This feature is under development. Thanks for your patience!"
+        # Use user input directly for RAG
+        response = await get_cbt_recommendation(user_input)
 
     elif tool_class == "reminder":
         response=await set_reminder(

@@ -31,3 +31,9 @@ requests
 watchdog
 
 psycopg2-binary
+
+langchain-community
+
+pypdf
+
+pgvector
