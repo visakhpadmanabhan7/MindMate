@@ -21,3 +21,5 @@ greenlet
 bumpver  # Version management tool to handle versioning of your project
 
 aiosmtplib
+
+email-validator
