@@ -23,3 +23,11 @@ bumpver  # Version management tool to handle versioning of your project
 aiosmtplib
 
 email-validator
+
+streamlit
+
+requests
+
+watchdog
+
+psycopg2-binary
