@@ -13,3 +13,14 @@ async def run_classification_prompt(system_prompt: str, user_input: str) -> str:
         ]
     )
     return response.choices[0].message.content.strip().lower()
+
+
+async def run_extraction_prompt(system_prompt: str, user_input: str) -> str:
+    response = await client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_input}
+        ]
+    )
+    return response.choices[0].message.content.strip()

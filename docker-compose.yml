@@ -4,6 +4,7 @@ services:
   db:
     image: ankane/pgvector
     container_name: mindmate_postgres
+    restart: always
     ports:
       - "5432:5432"
     environment:
@@ -13,5 +14,20 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: mindmate_pgadmin
+    restart: always
+    ports:
+      - "127.0.0.1:8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mindmate.com
+      PGADMIN_DEFAULT_PASSWORD: secret123
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+
 volumes:
   pgdata:
+  pgadmin_data:

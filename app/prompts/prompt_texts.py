@@ -3,9 +3,8 @@
 SELFCARE_INPUT_CLASSIFIER = (
     "Classify the user's input strictly as one of the following types:\n"
     "- 'mood' → if they are expressing a feeling (e.g., 'I feel low')\n"
-    "- 'reminder' → if they ask for a recurring check-in or nudge\n"
     "- 'advice' → if they ask a question about mental health or self-care\n\n"
-    "Only return one of these three words: 'mood', 'reminder', or 'advice'. Do not explain."
+    "Only return one of these three words: 'mood', or 'advice'. Do not explain."
 )
 
 MOOD_CLASSIFIER = (
@@ -28,3 +27,15 @@ JOURNAL_PROMPT_GENERATOR = (
 INTENT_DETECTOR = (
     "Classify this input as either 'selfcare' or 'journal'. Only return one of those two words."
 )
+
+REMINDER_TIME_EXTRACTOR = """
+You are a helpful assistant. Extract the **time of day** from a reminder request and return it in 24-hour format as HH:MM.
+
+If the user doesn't mention a time, default to 20:00 (8 PM).
+
+Examples:
+"Remind me to journal every evening" → 20:00  
+"Set a reminder at 9 AM" → 09:00  
+"Ping me at 7 tonight" → 19:00  
+"Check in daily" → 20:00
+"""

@@ -1,6 +1,5 @@
 from langgraph.graph import StateGraph, END
 from pydantic import BaseModel
-from app.core.openai_client import client
 from app.prompts.prompt_texts import INTENT_DETECTOR
 from app.tools.journaling.journalling_prompt_generator import generate_prompt
 from app.tools.journaling.journal_store import save_journal_entry
@@ -8,11 +7,13 @@ from app.tools.journaling.prompt_utils import classify_journal_input
 from app.tools.selfcare.mood_tracker import log_mood, classify_mood
 from app.tools.selfcare.selcare_input_classifier import classify_selfcare_input
 from app.core.openai_utils import run_classification_prompt
+from app.tools.selfcare.wellness_reminder import set_reminder
 
 
 # shared state model
 class State(BaseModel):
     input: str
+    user_id: str
     intent: str | None = None
     response: str | None = None
     tool_class: str | None = None
@@ -23,6 +24,7 @@ async def detect_intent(state: State) -> State:
 
     intent = await run_classification_prompt(INTENT_DETECTOR, user_input)
     return state.model_copy(update={"intent": intent})
+
 # Routing logic
 def route(state: State) -> str:
     return state.intent
@@ -34,20 +36,24 @@ async def selfcare_node(state: State) -> State:
 
     if tool_class == "mood":
         mood_label = await classify_mood(user_input)
-        await log_mood(user_input, mood_label)
+        await log_mood(message=user_input, mood_label=mood_label,user_id=state.user_id)
         response = f"Mood logged as '{mood_label}'. You're not alone — thank you for checking in."
 
-    elif tool_class == "reminder":
-        # Stub: Reminder tool coming soon
-        response = "[SelfCareAgent • Reminder] This feature is not available yet. Stay tuned!"
-
-    else:  # tool_class == "advice"
-        # Stub: RAGTool advice coming soon
+    elif tool_class == "advice":
         response = "[SelfCareAgent • Advice] This feature is under development. Thanks for your patience!"
+
+    elif tool_class == "reminder":
+        response=await set_reminder(
+            user_id=state.user_id,
+            message="Time to journal and check in 💭",
+            frequency="daily",
+            time_of_day="20:00"
+        )
 
     return state.model_copy(update={"response": response,
                                     "intent": state.intent,
-                                    "tool_class": tool_class})
+                                    "tool_class": tool_class,
+                                    "user_id": state.user_id})
 # Journaling agent node Stub
 async def journaling_node(state: State) -> State:
     classify_journal = await classify_journal_input(state.input)
@@ -56,12 +62,13 @@ async def journaling_node(state: State) -> State:
         prompt = await generate_prompt(state.input)
         response = f"{prompt}"
     else:
-        await save_journal_entry(content=state.input)
+        await save_journal_entry(content=state.input,user_id=state.user_id)
         response = "Entry saved as journal. Feel free to share more or ask for a prompt."
 
     return state.model_copy(update={"response": response,
                                     "intent": state.intent,
-                                    "tool_class": classify_journal})
+                                    "tool_class": classify_journal,
+                                    "user_id": state.user_id})
 
 # Define LangGraph
 graph = StateGraph(State)

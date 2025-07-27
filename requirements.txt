@@ -19,3 +19,5 @@ asyncpg # Async PostgreSQL driver for SQLAlchemy, enabling efficient database op
 greenlet
 
 bumpver  # Version management tool to handle versioning of your project
+
+aiosmtplib
