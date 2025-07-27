@@ -33,7 +33,6 @@ def route(state: State) -> str:
 async def selfcare_node(state: State) -> State:
     user_input = state.input
     tool_class = await classify_selfcare_input(user_input)
-
     if tool_class == "mood":
         mood_label = await classify_mood(user_input)
         await log_mood(message=user_input, mood_label=mood_label,user_id=state.user_id)
@@ -44,10 +43,10 @@ async def selfcare_node(state: State) -> State:
 
     elif tool_class == "reminder":
         response=await set_reminder(
+            user_input=user_input,
             user_id=state.user_id,
             message="Time to journal and check in 💭",
             frequency="daily",
-            time_of_day="20:00"
         )
 
     return state.model_copy(update={"response": response,

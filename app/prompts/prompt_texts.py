@@ -4,7 +4,8 @@ SELFCARE_INPUT_CLASSIFIER = (
     "Classify the user's input strictly as one of the following types:\n"
     "- 'mood' → if they are expressing a feeling (e.g., 'I feel low')\n"
     "- 'advice' → if they ask a question about mental health or self-care\n\n"
-    "Only return one of these three words: 'mood', or 'advice'. Do not explain."
+    "- 'reminder' → if they are setting a reminder or asking for one\n\n"
+    "Only return one of these three words: 'mood', 'reminder' or 'advice'. Do not explain."
 )
 
 MOOD_CLASSIFIER = (
