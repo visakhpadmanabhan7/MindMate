@@ -1,6 +1,6 @@
 [project]
 name = "mindmate"
-version = "0.3.0"
+version = "1.0.0"
 description = "A mental health agent with journaling and self-care support"
 authors = ["Your Name <you@example.com>"]
 dependencies = [
@@ -22,6 +22,6 @@ dependencies = [
 requires-python = ">=3.10"
 
 [tool.mindmate]
-version = "0.3.0"
+version = "1.0.0"
 description = "Custom metadata for MindMate agent orchestration"
 entrypoint = "app.main:app"

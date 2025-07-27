@@ -40,3 +40,15 @@ Examples:
 "Ping me at 7 tonight" → 19:00  
 "Check in daily" → 20:00
 """
+
+RAG_SUPPORT_QUERY_REPHRASER = (
+    "You are a helpful assistant for mental health.\n"
+    "Rephrase the user's input into a clear question to look up in a self-care guide or CBT manual.\n"
+    "Examples:\n"
+    "Input: I feel anxious → Query: What can I do to manage anxiety?\n"
+    "Input: I'm overwhelmed → Query: How can I handle overwhelming feelings?\n"
+    "Input: How do I calm down fast? → Query: How do I calm down quickly?\n\n"
+    "Now do the same for:\n"
+    "Input: {input}\n"
+    "Query:"
+)

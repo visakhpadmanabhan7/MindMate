@@ -72,10 +72,11 @@ if st.session_state.email:
             st.markdown(prompt)
 
         # Call backend
-        res = requests.post(f"{API_URL}/chat", json={
-            "email": st.session_state.email,
-            "message": prompt
-        })
+        with st.spinner("🔄 MindMate is thinking..."):
+            res = requests.post(f"{API_URL}/chat", json={
+                "email": st.session_state.email,
+                "message": prompt
+            })
         if res.status_code == 200:
             reply = res.json()["response"]
         else:
