@@ -1,249 +1,180 @@
 # MINDMATE – AI‑Powered Mental Wellness Companion
 
-MindMate is a mental‑health companion that helps users reflect, journal and get supportive self‑care guidance. It orchestrates multiple GPT‑based tools through a LangGraph workflow, logs entries and moods to a PostgreSQL database, and exposes a simple FastAPI interface.
+**MindMate** is an AI‑powered mental health companion that helps users reflect, journal, and receive supportive self‑care guidance. It orchestrates GPT‑based tools using LangGraph workflows, tracks moods, and stores journal entries in a PostgreSQL database. It also features a Streamlit frontend for interaction.
 
-## Features
+---
+
+## ✨ Features
 
 ### 🧠 Intent Detection  
-- Classifies whether user input is a journaling request or a self‑care query using an LLM prompt.
+Classifies whether user input is a journal entry, a self‑care request, or a prompt request using GPT-based LLM.
 
 ### 📓 Journaling Agent  
-- Generates reflective prompts.
-- Stores journal entries in a PostgreSQL database.
-- Classifies input as a journal entry or a prompt request.
+- Generates reflective prompts using templates and prompt utilities.  
+- Stores journal entries with timestamps and user ID.  
+- Classifies between journaling prompt requests and direct entries.
 
 ### ❤️ Self‑Care Agent  
-- Classifies input into mood tracking, wellness reminders, or advice.
-- Tracks moods and stores them with timestamps.
-- Stub tools for reminders and advice (under development).
+- Classifies input into mood logs, reminders, or advice.  
+- Stores mood data in PostgreSQL with mood classification.  
+- Provides advice based on CBT documents via a RAG pipeline.  
+- Stubbed support for scheduled wellness reminders.
 
-### 🛠 Tech Stack  
-- **FastAPI** + **Uvicorn**: REST API.
-- **LangGraph** + **LangChain**: Tool routing and orchestration.
-- **OpenAI API**: All GPT calls (classification and generation).
-- **PostgreSQL** + **pgvector**: Logging journals and moods.
-- **SQLAlchemy (async)**: Database access.
+### 🔍 Retrieval-Augmented Generation (RAG)  
+- Extracts advice from CBT-based PDFs using pgvector and LangChain.  
+- Populates vector DB from `/app/data/*.pdf`.
+
+### 👥 User Management  
+- Endpoints for user creation, checking existence, and future authentication.
 
 ---
 
-## Architecture
+## 🧱 Architecture
 
 ```text
-User Input
-    ↓
-Intent Detection (journal or self‑care)
-    ↓
-──────────────────────────────
-↓                             ↓
-Journaling Agent          Self‑Care Agent
-↓                             ↓
-Prompt or entry          Mood/reminder/advice
-↓                             ↓
-Database log              Mood log
-```
+            User Input
+                 ↓
+         Intent Detection (LLM)
+             ↓           ↓
+       Journal         Self-Care
+        ↓     ↓         ↓     ↓
+  Prompt?   Entry    Mood   Advice
+                 ↓         ↓
+               Database & RAG
+```               
+---
+## 🗂️ Project Structure
+
+| Path                     | Description                             |
+| ------------------------ | --------------------------------------- |
+| `app/main.py`            | FastAPI app & API endpoints             |
+| `app/langraph_runner.py` | LangGraph flow for routing GPT tools    |
+| `app/core/`              | OpenAI client and utility functions     |
+| `app/prompts/`           | Templates for prompts                   |
+| `app/tools/journaling/`  | Journal tools (prompts, storage, utils) |
+| `app/tools/selfcare/`    | Mood logging, reminders, RAG advice     |
+| `app/db/`                | SQLAlchemy models and DB ops            |
+| `app/streamlit_app.py`   | Streamlit UI with journal/mood tabs     |
+
+---
+## 🛠️ Tech Stack
+FastAPI + Uvicorn – Backend REST API
+
+LangGraph + LangChain – Agent routing + RAG
+
+OpenAI GPT API – Classification + Generation
+
+PostgreSQL + pgvector – Journal + mood storage + vector DB
+
+SQLAlchemy (async) – Database ORM
+
+Streamlit – Frontend UI
+
+Docker / docker-compose – Deployment
 
 ---
 
-## Project Structure
+##  🧾 Database Models
+### journal_entries
+- id: UUID 
+- user_id: Text 
+- content: Text 
+- created_at: Timestamp
 
-| Path                      | Purpose                                  |
-| ------------------------- | ---------------------------------------- |
-| `app/main.py`             | FastAPI app + API routes                 |
-| `app/langraph_runner.py`  | LangGraph definition & tool wiring       |
-| `app/core/`               | OpenAI client & prompt utils             |
-| `app/prompts/`            | Prompt templates                         |
-| `app/tools/journaling/`   | Journal logic: prompt generator, storage |
-| `app/tools/selfcare/`     | Mood tracking, input classification      |
-| `app/db/`                 | Database models, setup, views            |
-
+### mood_logs
+- id: UUID 
+- user_id: Text 
+- message: Text 
+- mood_label: Text 
+- timestamp: Timestamp
 ---
 
-## Database Models
+## 🚀 Getting Started
+### Clone the Repository
+- git clone https://github.com/visakhpadmanabhan7/MindMate.git
+- cd MindMate
+### Environment Variables
+Create a .env file:
+- OPENAI_API_KEY=your_openai_key
+- DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mindmate
 
-### journal_entries  
-- `id`: UUID  
-- `user_id`: Text  
-- `content`: Text  
-- `created_at`: Timestamp
+### Install Dependencies
+- pip install -r requirements.txt
 
-### mood_logs  
-- `id`: UUID  
-- `user_id`: Text  
-- `message`: Text  
-- `mood_label`: Text  
-- `timestamp`: Timestamp
+### Run PostgreSQL, frontend and backend with Docker
+- docker-compose up -d
 
----
+### Run the FastAPI App
+- uvicorn app.main:app --reload
 
-## Setup Instructions
-
-### 1. Clone the Repo
-```bash
-git clone https://github.com/visakhpadmanabhan7/MindMate.git
-cd MindMate
-```
-
-### 2. Environment Setup
-Create a `.env` file with the following:
-```env
-OPENAI_API_KEY=your_key_here
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mindmate
-```
-
-### 3. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Run PostgreSQL (via Docker)
-```bash
-docker-compose up -d
-```
-
-### 5. Initialize DB
-```bash
-python app/db/setup_db.py
-```
-
-### 6. Start the API Server
-```bash
-uvicorn app.main:app --reload
-```
+### Run the Streamlit App
+- streamlit run app/streamlit_app.py
 
 ---
+## 📡 API Endpoints
 
-## API Endpoints
-
-### `POST /chat`
+### POST /chat
+Classifies input and responds with intent:
 ```json
 {
-  "message": "I feel overwhelmed today."
+  "message": "I feel anxious today."
 }
 ```
-Returns:
+Response:
 ```json
 {
-  "response": "Your entry has been saved. Would you like a prompt?",
-  "intent": "journal",
-  "tool_class": "entry"
+  "response": "Your message has been classified as a self-care request.",
+  "intent": "selfcare"
 }
 ```
+### POST /chat
+Classifies input and responds with intent:
 
-### `GET /get_all_sample_records`
-Returns last 5 journal entries and mood logs.
-
-### `GET /reset_state`
-Drops and recreates database tables (for dev/test).
-
----
-
-## Roadmap
-
-- [ ] Implement wellness reminders
-- [ ] Add RAG-based self-care advice with pgvector
-- [ ] Visual frontend (Streamlit or Chainlit)
-- [ ] Mood tracking visualization
-
----
-
-## Disclaimer
-
-MindMate is not a replacement for professional mental health care. It is a research tool designed for self-reflection and educational use. For medical or mental health emergencies, seek professional help.
-
----
-
-
-
-## API Endpoints
-
-### `POST /chat`
-Sends a message to MindMate and returns a structured response based on the detected intent.
-
-#### Example 1 – Journal Entry
-**Request:**
 ```json
 {
-  "message": "Today was a bad dat at work. i could not do a lot of work"
-}
-```
-
-**Response:**
-```json
-{
-  "intent": "journal",
-  "response": "Entry saved as journal. Feel free to share more or ask for a prompt.",
-  "tool_class": "entry"
-}
-```
-
-#### Example 2 – Ask for a journaling prompt
-**Request:**
-```json
-{
-  "message": "Can you give me something to write about?"
-}
-```
-
-**Response:**
-```json
-{
-  "response": "Here's a prompt: What's something you've learned about yourself recently?",
-  "intent": "journal",
-  "tool_class": "prompt_request"
-}
-```
-
-#### Example 3 – Mood tracking
-**Request:**
-```json
-{
-  "message": "I’ve been feeling super anxious all day."
-}
-```
-
-**Response:**
-```json
-{
-  "response": "Got it. I’ve logged your mood as 'anxious'. Take a moment to breathe.",
+  "response": "Logged your mood as 'anxious'.",
   "intent": "selfcare",
   "tool_class": "mood"
 }
 ```
 
+### POST /register_user
+- Registers a new user.
+
+### GET /user_exists/{user_id}
+- Checks if a user exists.
+
+### GET /get_all_sample_records
+- Returns last 5 mood and journal entries.
+
+### GET /reset_state
+- Drops and recreates all tables.
 ---
 
-### `GET /get_all_sample_records`
-Fetches the latest 5 entries from both `journal_entries` and `mood_logs`.
+## 📊 Streamlit Frontend
+- Journaling and mood logging with real-time feedback
 
-**Response:**
-```json
-{
-  "journal_entries": [
-    {
-      "user_id": "user_1",
-      "content": "Today was a hard day at work...",
-      "created_at": "2025-07-24T10:42:11"
-    }
-  ],
-  "mood_logs": [
-    {
-      "user_id": "user_1",
-      "message": "I feel burnt out",
-      "mood_label": "exhausted",
-      "timestamp": "2025-07-24T10:43:00"
-    }
-  ]
-}
-```
+- Sentiment detection using GPT
 
+- Mood color visualization
+
+- Easy self-care tip generation
+
+- Generation
 ---
 
-### `GET /reset_state`
-Drops and recreates the `journal_entries` and `mood_logs` tables. Useful for resetting the app during development or testing.
+## 📌 Roadmap
 
-**Response:**
-```json
-{
-  "status": "reset_successful"
-}
-```
+- [x] Streamlit frontend  
+- [x] RAG-based self-care using CBT PDFs  
+- [ ] Guardrails  
+- [ ] Scheduled reminders and push notifications  
+- [ ] Chat-style memory window
+- [ ] Auth system (JWT/session)  
+---
+
+## ⚠️ Disclaimer
+MindMate is not a substitute for professional mental health support. It is a prototype for self-reflection and research use only.
+
+## 📄 License
+MIT License – see LICENSE for details.
