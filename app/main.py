@@ -5,7 +5,8 @@ from app.db.setup_db import reset_db
 from app.db.user_manager import create_user, get_user_by_email
 from app.langraph_runner import app_flow
 from app.db.view_records import fetch_sample_records
-
+from langfuse import get_client, observe
+get_client()
 app = FastAPI()
 
 
