@@ -37,3 +37,7 @@ langchain-community
 pypdf
 
 pgvector
+
+langfuse>=3.2.0
+langchain-openai
+langchain-core

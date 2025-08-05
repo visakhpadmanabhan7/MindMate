@@ -27,11 +27,21 @@ class UserCreateRequest(BaseModel):
 #  Main Chat Endpoint
 # -------------------------
 
+@observe(name="chat_request", as_type="tool")
 @app.post("/chat")
 async def chat(req: ChatRequest):
     user = await get_user_by_email(req.email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found. Please register first.")
+
+    langfuse = get_client()
+    langfuse.update_current_trace(
+        session_id=str(user.id),
+        metadata={
+            "email": user.email,
+            "chat_input": req.message
+        }
+    )
 
     result = await app_flow.ainvoke({
         "input": req.message,

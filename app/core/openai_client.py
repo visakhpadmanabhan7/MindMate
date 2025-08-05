@@ -1,4 +1,4 @@
-from openai import AsyncOpenAI
+from langfuse.openai import openai
 from dotenv import load_dotenv
 import os
 
@@ -6,5 +6,5 @@ import os
 load_dotenv()
 
 # Singleton async client
-client = AsyncOpenAI()
+client = openai.AsyncOpenAI()
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-nano")
