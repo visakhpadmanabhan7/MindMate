@@ -11,35 +11,34 @@ from app.core.openai_client import OPENAI_MODEL
 from langchain.vectorstores.pgvector import PGVector
 from langchain.chains import RetrievalQA
 from langchain.schema import Document
-
+from langfuse import observe
+from langfuse.langchain import CallbackHandler
 DB_URL = os.getenv("DATABASE_URL").replace("asyncpg", "psycopg2")
 
-
+@observe(name="get_cbt_recommendation", as_type="retrieval")
 async def get_cbt_recommendation(raw_input: str, debug: bool = False) -> str:
     query_prompt = RAG_SUPPORT_QUERY_REPHRASER.format(input=raw_input)
-
-    # Await the rephrasing step
     refined_query = await run_classification_prompt(query_prompt, "")
 
     embedding_model = OpenAIEmbeddings()
-
     retriever = PGVector(
         collection_name="cbt_docs",
         connection_string=DB_URL,
         embedding_function=embedding_model
     ).as_retriever(search_kwargs={"k": 8})
 
+    handler = CallbackHandler()
     llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0.0)
 
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
         return_source_documents=True,
-        chain_type="stuff"
+        chain_type="stuff",
+        callbacks=[handler]
     )
 
-    # Use invoke instead of deprecated call
-    result = qa_chain.invoke(refined_query)
+    result = await qa_chain.ainvoke(refined_query)
 
     answer = result["result"]
     sources: list[Document] = result["source_documents"]

@@ -4,7 +4,8 @@ from sqlalchemy import insert
 from app.core.openai_utils import run_classification_prompt
 from app.db.models import mood_logs
 from app.db.engine import engine
-from app.prompts.prompt_texts import MOOD_CLASSIFIER
+from app.prompts.prompt_texts import MOOD_CLASSIFIER, NEGATIVE_MOOD_PROMPT
+
 # Classify mood using LLM
 async def classify_mood(user_input: str) -> str:
     """
@@ -12,6 +13,11 @@ async def classify_mood(user_input: str) -> str:
     """
 
     return await run_classification_prompt(MOOD_CLASSIFIER, user_input)
+
+async def is_negative_mood(user_input: str) -> bool:
+    mood_type = await run_classification_prompt(NEGATIVE_MOOD_PROMPT, user_input)
+    print(f"Classified mood type: {mood_type}")
+    return mood_type == "negative"
 
 
 # Log mood to the DB
