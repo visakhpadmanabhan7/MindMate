@@ -170,7 +170,7 @@ Classifies input and responds with intent:
 - [x] Journal entry
 - [x] Journal prompt generation
 - [x] RAG-based self-care using CBT PDFs
-- [x] LangSmith Integration
+- [x] Langfuse Integration
 - [ ] Guardrails  
 - [ ] Chat-style memory window
 - [ ] Scheduled reminders and push notifications  
