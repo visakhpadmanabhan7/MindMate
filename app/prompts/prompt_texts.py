@@ -52,3 +52,8 @@ RAG_SUPPORT_QUERY_REPHRASER = (
     "Input: {input}\n"
     "Query:"
 )
+
+NEGATIVE_MOOD_PROMPT = """
+Classify the user's mood as 'positive', 'neutral', or 'negative'.
+Only return one of these words, nothing else.
+"""

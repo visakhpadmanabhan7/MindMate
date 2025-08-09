@@ -4,7 +4,7 @@ from app.prompts.prompt_texts import INTENT_DETECTOR
 from app.tools.journaling.journalling_prompt_generator import generate_prompt
 from app.tools.journaling.journal_store import save_journal_entry
 from app.tools.journaling.prompt_utils import classify_journal_input
-from app.tools.selfcare.mood_tracker import log_mood, classify_mood
+from app.tools.selfcare.mood_tracker import log_mood, classify_mood, is_negative_mood
 from app.tools.selfcare.selcare_input_classifier import classify_selfcare_input
 from app.core.openai_utils import run_classification_prompt
 from app.tools.selfcare.wellness_reminder import set_reminder
@@ -42,14 +42,20 @@ async def selfcare_node(state: State) -> State:
         mood_label = await classify_mood(user_input)
         await log_mood(message=user_input, mood_label=mood_label, user_id=user_id)
 
-        # Step 2: Use RAG to give support
-        advice = await get_cbt_recommendation(f"What can I do if I feel {mood_label}?")
-        response = (
-            f" Mood logged as '{mood_label}'.\n\n"
-            f" Here's something that might help:\n\n"
-            f"{advice}"
-        )
-
+        if await is_negative_mood(user_input):
+            advice = await get_cbt_recommendation(
+                f"What can I do if I feel {mood_label}?"
+            )
+            response = (
+                f" Mood logged as '{mood_label}'.\n\n"
+                f" Here's something that might help:\n\n"
+                f"{advice}"
+            )
+        else:
+            response = (
+                f" Mood logged as '{mood_label}'.\n\n"
+                f" Keep up the good work and stay mindful."
+            )
     elif tool_class == "advice":
         # Use user input directly for RAG
         response = await get_cbt_recommendation(user_input)
