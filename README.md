@@ -166,10 +166,13 @@ Classifies input and responds with intent:
 ## 📌 Roadmap
 
 - [x] Streamlit frontend  
-- [x] RAG-based self-care using CBT PDFs  
+- [x] Mood detection and logging
+- [x] Journal entry
+- [x] Journal prompt generation
+- [x] RAG-based self-care using CBT PDFs
 - [ ] Guardrails  
-- [ ] Scheduled reminders and push notifications  
 - [ ] Chat-style memory window
+- [ ] Scheduled reminders and push notifications  
 - [ ] Auth system (JWT/session)  
 ---
 
