@@ -1,6 +1,7 @@
 import os
-import aiosmtplib
 from email.message import EmailMessage
+
+import aiosmtplib
 
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))

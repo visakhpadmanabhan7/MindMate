@@ -1,43 +1,50 @@
-fastapi  # Web framework to create API routes for your backend (e.g., /chat)
+# Web framework
+fastapi
+uvicorn[standard]
 
-uvicorn[standard]  # ASGI server to run FastAPI app locally or in production
-
-openai  # Official OpenAI SDK to call models like gpt-4.1-mini for LLM tasks
-
-langgraph  # Agent orchestration engine for building multi-agent workflows
-
-langchain  # Framework for building LLM pipelines, tools, and memory systems
-
-langchain-openai  # LangChain wrapper for OpenAI models (chat, embeddings, etc.)
-
-tiktoken  # Tokenizer used to count or split text for OpenAI models (important for chunking and token limits)
-
-sqlalchemy # ORM for database interactions, useful for managing user data and chat history
-
-asyncpg # Async PostgreSQL driver for SQLAlchemy, enabling efficient database operations
-
-greenlet
-
-bumpver  # Version management tool to handle versioning of your project
-
-aiosmtplib
-
-email-validator
-
-streamlit
-
-requests
-
-watchdog
-
-psycopg2-binary
-
+# LLM
+openai
+groq
+langgraph
+langchain
+langchain-openai
+langchain-groq
+langchain-huggingface
+sentence-transformers
 langchain-community
+langchain-core
+langchain-classic
+langchain-text-splitters
+tiktoken
 
+# Database
+sqlalchemy
+aiosqlite
+
+# Vector store
+chromadb
+langchain-chroma
+
+# Document processing
 pypdf
 
-pgvector
+# Auth
+bcrypt
 
+# Config & validation
+pydantic
+pydantic-settings
+python-dotenv
+email-validator
+
+# Email (optional, for reminders)
+aiosmtplib
+
+# Observability (optional)
 langfuse>=3.2.0
-langchain-openai
-langchain-core
+
+# Dev / testing
+pytest
+pytest-asyncio
+pytest-cov
+ruff

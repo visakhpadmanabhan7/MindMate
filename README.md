@@ -1,184 +1,130 @@
-# MINDMATE – AI‑Powered Mental Wellness Companion
+# MindMate - AI Mental Health Companion
 
-**MindMate** is an AI‑powered mental health companion that helps users reflect, journal, and receive supportive self‑care guidance. It orchestrates GPT‑based tools using LangGraph workflows, tracks moods, and stores journal entries in a PostgreSQL database. It also features a Streamlit frontend for interaction.
+A full-stack AI-powered mental health companion with journaling, mood tracking, CBT-based advice (RAG), and therapy session support.
 
----
+## Tech Stack
 
-## ✨ Features
+**Backend:** FastAPI, LangGraph, LangChain, OpenAI, SQLAlchemy, SQLite/PostgreSQL, ChromaDB
 
-### 🧠 Intent Detection  
-Classifies whether user input is a journal entry, a self‑care request, or a prompt request using GPT-based LLM.
+**Frontend:** Next.js, TypeScript, Tailwind CSS, shadcn/ui, Recharts
 
-### 📓 Journaling Agent  
-- Generates reflective prompts using templates and prompt utilities.  
-- Stores journal entries with timestamps and user ID.  
-- Classifies between journaling prompt requests and direct entries.
+**Testing:** pytest, pytest-asyncio, Ruff
 
-### ❤️ Self‑Care Agent  
-- Classifies input into mood logs, reminders, or advice.  
-- Stores mood data in PostgreSQL with mood classification.  
-- Provides advice based on CBT documents via a RAG pipeline.  
-- Stubbed support for scheduled wellness reminders.
+## Architecture
 
-### 🔍 Retrieval-Augmented Generation (RAG)  
-- Extracts advice from CBT-based PDFs using pgvector and LangChain.  
-- Populates vector DB from `/app/data/*.pdf`.
-
-### 👥 User Management  
-- Endpoints for user creation, checking existence, and future authentication.
-
----
-
-## 🧱 Architecture
-
-```text
-            User Input
-                 ↓
-         Intent Detection (LLM)
-             ↓           ↓
-       Journal         Self-Care
-        ↓     ↓         ↓     ↓
-  Prompt?   Entry    Mood   Advice
-                 ↓         ↓
-               Database & RAG
-```               
----
-## 🗂️ Project Structure
-
-| Path                     | Description                             |
-| ------------------------ | --------------------------------------- |
-| `app/main.py`            | FastAPI app & API endpoints             |
-| `app/langraph_runner.py` | LangGraph flow for routing GPT tools    |
-| `app/core/`              | OpenAI client and utility functions     |
-| `app/prompts/`           | Templates for prompts                   |
-| `app/tools/journaling/`  | Journal tools (prompts, storage, utils) |
-| `app/tools/selfcare/`    | Mood logging, reminders, RAG advice     |
-| `app/db/`                | SQLAlchemy models and DB ops            |
-| `app/streamlit_app.py`   | Streamlit UI with journal/mood tabs     |
-
----
-## 🛠️ Tech Stack
-FastAPI + Uvicorn – Backend REST API
-
-LangGraph + LangChain – Agent routing + RAG
-
-OpenAI GPT API – Classification + Generation
-
-PostgreSQL + pgvector – Journal + mood storage + vector DB
-
-SQLAlchemy (async) – Database ORM
-
-Streamlit – Frontend UI
-
-Docker / docker-compose – Deployment
-
----
-
-##  🧾 Database Models
-### journal_entries
-- id: UUID 
-- user_id: Text 
-- content: Text 
-- created_at: Timestamp
-
-### mood_logs
-- id: UUID 
-- user_id: Text 
-- message: Text 
-- mood_label: Text 
-- timestamp: Timestamp
----
-
-## 🚀 Getting Started
-### Clone the Repository
-- git clone https://github.com/visakhpadmanabhan7/MindMate.git
-- cd MindMate
-### Environment Variables
-Create a .env file:
-- OPENAI_API_KEY=your_openai_key
-- DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/mindmate
-
-### Install Dependencies
-- pip install -r requirements.txt
-
-### Run PostgreSQL, frontend and backend with Docker
-- docker-compose up -d
-
-### Run the FastAPI App
-- uvicorn app.main:app --reload
-
-### Run the Streamlit App
-- streamlit run app/streamlit_app.py
-
----
-## 📡 API Endpoints
-
-### POST /chat
-Classifies input and responds with intent:
-```json
-{
-  "message": "I feel anxious today."
-}
 ```
-Response:
-```json
-{
-  "response": "Your message has been classified as a self-care request.",
-  "intent": "selfcare"
-}
-```
-### POST /chat
-Classifies input and responds with intent:
-
-```json
-{
-  "response": "Logged your mood as 'anxious'.",
-  "intent": "selfcare",
-  "tool_class": "mood"
-}
+Next.js (Vercel)  -->  FastAPI REST API  -->  LangGraph  -->  OpenAI
+                             |
+                   SQLite (local) / PostgreSQL (prod)
+                   ChromaDB (local) / pgvector (prod)
 ```
 
-### POST /register_user
-- Registers a new user.
+### LangGraph Workflow
 
-### GET /user_exists/{user_id}
-- Checks if a user exists.
+```
+User Input --> detect_intent
+  |-> "selfcare"  --> mood logging / CBT advice (RAG) / reminders
+  |-> "journal"   --> prompt generation / entry storage
+  |-> "therapy"   --> session logging / prep / review / patterns
+  |-> "general"   --> friendly conversation
+  |-> crisis      --> safety resources (988 hotline)
+```
 
-### GET /get_all_sample_records
-- Returns last 5 mood and journal entries.
+## Features
 
-### GET /reset_state
-- Drops and recreates all tables.
----
+- **Intent-based routing** via LangGraph state machine
+- **Conversation memory** - context-aware across messages
+- **Mood tracking** with analytics dashboard (charts, streaks)
+- **RAG-based CBT advice** from 8 vectorized mental health PDFs
+- **Therapy companion** - log sessions, parse notes, detect cross-session patterns, prepare for sessions
+- **Journal** with search and history
+- **Crisis guardrails** - detects crisis language and responds with professional resources
+- **Streaming responses** via Server-Sent Events
+- **Data export** - download all data as JSON
+- **Dark mode** UI with responsive design
 
-## 📊 Streamlit Frontend
-- Journaling and mood logging with real-time feedback
+## Quick Start
 
-- Sentiment detection using GPT
+### Backend
 
-- Mood color visualization
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate
 
-- Easy self-care tip generation
+# Install dependencies
+pip install -r requirements.txt
 
-- Generation
----
+# Configure
+cp .env.example .env
+# Edit .env with your OPENAI_API_KEY
 
-## 📌 Roadmap
+# Index CBT PDFs (first time only)
+python -m app.scripts.index_pdfs
 
-- [x] Streamlit frontend  
-- [x] Mood detection and logging
-- [x] Journal entry
-- [x] Journal prompt generation
-- [x] RAG-based self-care using CBT PDFs
-- [x] Langfuse Integration
-- [ ] Guardrails  
-- [ ] Chat-style memory window
-- [ ] Scheduled reminders and push notifications  
-- [ ] Auth system (JWT/session)  
----
+# Start backend
+uvicorn app.main:app --reload
+```
 
-## ⚠️ Disclaimer
-MindMate is not a substitute for professional mental health support. It is a prototype for self-reflection and research use only.
+### Frontend
 
-## 📄 License
-MIT License – see LICENSE for details.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Visit `http://localhost:3000`
+
+### Run Tests
+
+```bash
+pytest tests/ -v
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/chat` | Send message, get response |
+| POST | `/api/v1/chat/stream` | Streaming chat via SSE |
+| POST | `/api/v1/register_user` | Register new user |
+| POST | `/api/v1/user_exists` | Check if user exists |
+| GET | `/api/v1/mood/analytics` | Mood trends and stats |
+| GET | `/api/v1/journal/entries` | Journal history with search |
+| GET | `/api/v1/therapy/sessions` | Therapy session history |
+| GET | `/api/v1/messages` | Chat message history |
+| GET | `/api/v1/export` | Export all user data |
+
+## Project Structure
+
+```
+app/                        # FastAPI backend
+  main.py                   # API routes and startup
+  langraph_runner.py        # LangGraph state machine
+  core/
+    config.py               # Centralized settings
+    llm.py                  # LLM provider abstraction
+    vectorstore.py          # ChromaDB client
+    guardrails.py           # Crisis detection
+  db/
+    engine.py               # Async SQLAlchemy engine
+    models.py               # Table definitions
+    message_store.py        # Conversation memory
+  tools/
+    journaling/             # Journal prompts, storage, analytics
+    selfcare/               # Mood tracking, RAG, reminders
+    therapy/                # Session parsing, insights, prep
+frontend/                   # Next.js app
+  src/app/
+    chat/                   # Chat with streaming
+    dashboard/              # Mood analytics charts
+    journal/                # Journal history
+    therapy/                # Therapy sessions
+    settings/               # Export, account
+tests/                      # pytest suite (22 tests)
+```
+
+## Disclaimer
+
+MindMate is not a substitute for professional mental health support. It is a personal project for self-reflection and learning.

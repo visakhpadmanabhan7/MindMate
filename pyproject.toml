@@ -1,8 +1,8 @@
 [project]
 name = "mindmate"
-version = "1.0.0"
-description = "A mental health agent with journaling and self-care support"
-authors = ["Your Name <you@example.com>"]
+version = "2.0.0"
+description = "AI-powered mental health companion with journaling, mood tracking, CBT advice, and therapy session support"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -10,18 +10,36 @@ dependencies = [
     "langgraph",
     "langchain",
     "langchain-openai",
+    "langchain-community",
+    "langchain-core",
     "tiktoken",
     "sqlalchemy",
-    "asyncpg",
-    "greenlet",
-    "bumpver",
-    "python-dotenv",
+    "aiosqlite",
+    "chromadb",
+    "langchain-chroma",
+    "pypdf",
     "pydantic",
-    'email-validator'
+    "pydantic-settings",
+    "python-dotenv",
+    "email-validator",
+    "aiosmtplib",
+    "langfuse>=3.2.0",
 ]
-requires-python = ">=3.10"
 
 [tool.mindmate]
-version = "1.0.0"
-description = "Custom metadata for MindMate agent orchestration"
+version = "2.0.0"
+description = "MindMate mental health agent"
 entrypoint = "app.main:app"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
+per-file-ignores = {"tests/conftest.py" = ["E402"]}

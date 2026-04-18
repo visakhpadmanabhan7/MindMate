@@ -1,6 +1,7 @@
 from app.core.openai_utils import run_classification_prompt
 from app.prompts.prompt_texts import JOURNAL_PROMPT_GENERATOR
 
+
 async def generate_prompt(user_input: str) -> str:
     """
     Generates a reflective journaling question based on user input.
