@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth";
 import { getExportUrl } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -21,6 +22,7 @@ import {
 export default function SettingsPage() {
   const { email, logout } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!email) router.push("/");
@@ -30,7 +32,10 @@ export default function SettingsPage() {
 
   const initials = email.slice(0, 2).toUpperCase();
 
-  const handleExport = () => window.open(getExportUrl(email), "_blank");
+  const handleExport = () => {
+    window.open(getExportUrl(email), "_blank");
+    toast("Download started", "info");
+  };
 
   const handleLogout = () => { logout(); router.push("/"); };
 

@@ -16,8 +16,13 @@ _vectorstore = None
 def get_embedding_model() -> HuggingFaceEmbeddings:
     global _embedding_model
     if _embedding_model is None:
+        encode_kwargs = {}
+        # BGE models benefit from a query instruction prefix
+        if "bge" in settings.EMBEDDING_MODEL.lower():
+            encode_kwargs["normalize_embeddings"] = True
         _embedding_model = HuggingFaceEmbeddings(
             model_name=settings.EMBEDDING_MODEL,
+            encode_kwargs=encode_kwargs,
         )
     return _embedding_model
 

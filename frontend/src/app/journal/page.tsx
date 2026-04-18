@@ -11,6 +11,7 @@ import {
   deleteJournalEntry,
   getJournalThemes,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,8 @@ interface JournalEntry {
   mood_label: string | null;
   themes: string[];
   entities: string[];
+  sentiment_score: number | null;
+  summary: string | null;
   created_at: string;
   updated_at: string | null;
 }
@@ -54,6 +57,7 @@ interface Theme {
 export default function JournalPage() {
   const { email } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [search, setSearch] = useState("");
@@ -122,6 +126,7 @@ export default function JournalPage() {
           entities: result.entities,
         });
         setEditingId(null);
+        toast("Entry updated", "success");
       } else {
         const result = await createJournalEntry(email, editorContent);
         setLastSaved({
@@ -129,12 +134,13 @@ export default function JournalPage() {
           themes: result.themes,
           entities: result.entities,
         });
+        toast("Journal entry saved", "success");
       }
       setEditorContent("");
       loadEntries();
       loadThemes();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to save");
+      toast(e instanceof Error ? e.message : "Failed to save", "error");
     }
     setSaving(false);
   };
@@ -148,8 +154,9 @@ export default function JournalPage() {
       setConfirmDelete(null);
       loadEntries();
       loadThemes();
+      toast("Entry deleted", "success");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to delete");
+      toast(e instanceof Error ? e.message : "Failed to delete", "error");
     }
     setDeleting(false);
   };
@@ -365,6 +372,20 @@ export default function JournalPage() {
                       <Calendar className="h-3 w-3" />
                       {formatDate(entry.created_at)}
                     </span>
+                    {entry.sentiment_score != null && (
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                        title={`Sentiment: ${entry.sentiment_score > 0 ? "+" : ""}${entry.sentiment_score.toFixed(1)}`}
+                        style={{
+                          backgroundColor:
+                            entry.sentiment_score > 0.3
+                              ? "oklch(0.65 0.17 145)"
+                              : entry.sentiment_score < -0.3
+                                ? "oklch(0.55 0.22 25)"
+                                : "oklch(0.68 0.14 85)",
+                        }}
+                      />
+                    )}
                     {entry.mood_label && (
                       <Badge
                         variant="secondary"
@@ -423,6 +444,11 @@ export default function JournalPage() {
               </DialogHeader>
 
               <div className="mt-4 space-y-4">
+                {viewEntry.summary && (
+                  <p className="text-xs italic text-muted-foreground border-l-2 border-primary/20 pl-3">
+                    {viewEntry.summary}
+                  </p>
+                )}
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">
                   {viewEntry.content}
                 </p>

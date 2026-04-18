@@ -158,6 +158,8 @@ export async function getJournalEntries(email: string, limit = 20, offset = 0, s
       mood_label: string | null;
       themes: string[];
       entities: string[];
+      sentiment_score: number | null;
+      summary: string | null;
       created_at: string;
       updated_at: string | null;
     }[];

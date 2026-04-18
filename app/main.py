@@ -131,12 +131,21 @@ async def chat_stream(req: ChatRequest):
     intent = result.get("intent", "")
     tool_class = result.get("tool_class", "")
 
-    # Auto-title session from first message
+    # Auto-title session from first message using LLM
     if req.session_id:
         session_msgs = await get_recent_messages(user.id, limit=3, session_id=req.session_id)
-        # If this is the first exchange (2 messages: user + assistant), set title
         if len(session_msgs) <= 2:
-            title = req.message[:50] + ("..." if len(req.message) > 50 else "")
+            try:
+                from app.core.llm import get_llm
+                llm = get_llm()
+                title = await llm.classify(
+                    "Summarize this message in 3-5 words as a conversation title. "
+                    "Return ONLY the title, no quotes or punctuation.",
+                    req.message,
+                )
+                title = title.strip().strip('"').strip("'")[:60]
+            except Exception:
+                title = req.message[:50] + ("..." if len(req.message) > 50 else "")
             await update_session_title(req.session_id, user.id, title)
 
     async def event_generator():

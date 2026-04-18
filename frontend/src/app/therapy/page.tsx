@@ -8,6 +8,7 @@ import {
   updateTherapySession,
   createTherapySession,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ interface TherapySession {
 export default function TherapyPage() {
   const { email } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [sessions, setSessions] = useState<TherapySession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +101,9 @@ export default function TherapyPage() {
       setShowNewForm(false);
       setNewSession({ issues: "", learnings: "", actions: "", techniques: "" });
       loadSessions();
+      toast("Session logged", "success");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create session");
+      toast(e instanceof Error ? e.message : "Failed to create session", "error");
     }
     setSaving(false);
   };
@@ -135,8 +138,9 @@ export default function TherapyPage() {
       });
       setEditingId(null);
       loadSessions();
-    } catch {
-      // ignore
+      toast("Session updated", "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to update session", "error");
     }
   };
 

@@ -9,6 +9,7 @@ import {
   deleteDocument,
   searchKnowledgeBase,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ interface SearchResult {
 export default function KnowledgePage() {
   const { email } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [docs, setDocs] = useState<DocInfo[]>([]);
@@ -107,10 +109,12 @@ export default function KnowledgePage() {
       setUploadProgress(100);
       setUploadStep("Done!");
       setUploadDone(`${file.name} — ${result.chunks} chunks indexed from ${result.pages} pages`);
+      toast("Document indexed successfully", "success");
       await loadDocs();
     } catch {
       clearInterval(progressTimer);
       setUploadDone("Upload failed. Please try again.");
+      toast("Upload failed", "error");
     }
 
     setTimeout(() => {
@@ -139,7 +143,10 @@ export default function KnowledgePage() {
       await deleteDocument(deleteTarget);
       await loadDocs();
       setSearchResults(null);
-    } catch {}
+      toast("Document deleted", "success");
+    } catch {
+      toast("Delete failed", "error");
+    }
     setDeleting(false);
     setDeleteTarget(null);
   };

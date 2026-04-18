@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4.1-nano"
 
-    # Embeddings (local, free)
-    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    # Embeddings (local, free) — BGE-small has better accuracy than MiniLM at similar speed
+    EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
 
     # Database — defaults to local SQLite
     DATABASE_URL: str = f"sqlite+aiosqlite:///{BASE_DIR / 'app' / 'data' / 'mindmate.db'}"

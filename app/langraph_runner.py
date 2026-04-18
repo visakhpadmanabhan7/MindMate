@@ -141,8 +141,18 @@ async def journaling_node(state: State) -> State:
             prompt = await generate_prompt(state.input)
             response = prompt
         else:
-            await save_journal_entry(content=state.input, user_id=state.user_id)
-            response = "Entry saved to your journal. Feel free to share more or ask for a prompt."
+            result = await save_journal_entry(content=state.input, user_id=state.user_id)
+            mood = result.get("mood", "")
+            themes = ", ".join(result.get("themes", [])[:3])
+            summary = result.get("summary", "")
+            response = "Entry saved to your journal."
+            if mood and mood != "neutral":
+                response += f"\n\n**Mood detected:** {mood}"
+            if themes:
+                response += f"\n**Themes:** {themes}"
+            if summary:
+                response += f"\n**Summary:** {summary}"
+            response += "\n\nFeel free to share more or ask for a prompt."
             classify_journal = "entry"
     except Exception:
         logger.exception("Error in journaling_node")
@@ -193,9 +203,16 @@ async def general_node(state: State) -> State:
     })
 
 
-async def enrich_response(state: State) -> State:
-    """Passive mood detection + therapy-aware recall.
+NEGATIVE_MOODS = {
+    "sad", "anxious", "angry", "stressed", "overwhelmed",
+    "lonely", "tired", "numb", "hopeless", "frustrated",
+}
 
+
+async def enrich_response(state: State) -> State:
+    """Passive mood detection + split feedback (history + science).
+
+    Only enriches for negative moods or help-seeking messages.
     Runs after intent nodes, before save_messages.
     """
     # Skip if mood was already explicitly detected (selfcare/mood path)
@@ -215,7 +232,10 @@ async def enrich_response(state: State) -> State:
 
         updates = {"detected_mood": mood}
 
-        # Check if this mood/topic was discussed in therapy
+        # Only enrich for negative moods — positive moods don't need unsolicited advice
+        if mood not in NEGATIVE_MOODS:
+            return state.model_copy(update=updates)
+
         feedback = await get_therapy_aware_feedback(
             user_id=state.user_id,
             current_input=state.input,

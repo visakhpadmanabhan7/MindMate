@@ -44,8 +44,8 @@ async def _analyze_entry(content: str) -> dict:
     }
 
 
-async def save_journal_entry(content: str, user_id: str = "anonymous") -> int:
-    """Save journal entry from chat with analysis + mood logging. Returns entry ID."""
+async def save_journal_entry(content: str, user_id: str = "anonymous") -> dict:
+    """Save journal entry from chat with analysis + mood logging. Returns entry dict."""
     analysis = await _analyze_entry(content)
     now = datetime.now(timezone.utc)
 
@@ -75,7 +75,12 @@ async def save_journal_entry(content: str, user_id: str = "anonymous") -> int:
             confidence="medium",
         )
 
-    return entry_id
+    return {
+        "id": entry_id,
+        "mood": analysis["mood"],
+        "themes": analysis["themes"],
+        "summary": analysis["summary"],
+    }
 
 
 async def save_journal_entry_direct(content: str, user_id: str) -> dict:
