@@ -22,6 +22,12 @@ cd frontend && npm run build                                            # Build 
 - **Database:** SQLite at `app/data/mindmate.db`, PostgreSQL-ready via `DATABASE_URL`
 - **Vectors:** ChromaDB at `app/data/chroma/`, pgvector-ready for production
 
+## Git Rules
+
+- **NEVER** add `Co-Authored-By` lines to commit messages
+- **NEVER** mention Claude, AI, or any assistant in commit messages
+- Write commits as if the developer wrote the code themselves
+
 ## Key Conventions — FOLLOW THESE
 
 - All settings via `app.core.config.get_settings()` — NEVER use `os.getenv()` directly
