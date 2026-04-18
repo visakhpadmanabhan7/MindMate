@@ -136,68 +136,228 @@ docker compose up --build
 
 ---
 
-## How It Works
+## Architecture
+
+### System Overview
+
+```mermaid
+graph TB
+    subgraph Frontend["Frontend (Next.js 16 + React 19)"]
+        Chat[Chat Page]
+        Dashboard[Mood Dashboard]
+        Journal[Journal Page]
+        Therapy[Therapy Page]
+        Summary[Weekly Summary]
+        Knowledge[Knowledge Base]
+    end
+
+    subgraph Backend["Backend (FastAPI)"]
+        API[REST API + SSE Streaming]
+        LG[LangGraph State Machine]
+        
+        subgraph Tools
+            SC[Selfcare Tool]
+            JT[Journal Tool]
+            TT[Therapy Tool]
+            IT[Insights Engine]
+        end
+    end
+
+    subgraph Data
+        SQLite[(SQLite DB)]
+        ChromaDB[(ChromaDB Vectors)]
+    end
+
+    subgraph External
+        Groq[Groq API - Llama 3.3 70B]
+        BGE[BGE Embeddings - Local]
+    end
+
+    Frontend -->|HTTP/SSE| API
+    API --> LG
+    LG --> Tools
+    SC -->|RAG Search| ChromaDB
+    SC -->|Mood Logging| SQLite
+    JT -->|Save + Analyze| SQLite
+    TT -->|Session CRUD| SQLite
+    IT -->|Cross-Reference| SQLite
+    IT -->|Science Lookup| ChromaDB
+    Tools -->|LLM Calls| Groq
+    Knowledge -->|Upload PDFs| ChromaDB
+    BGE -->|Embed Chunks| ChromaDB
+```
 
 ### LangGraph Flow
 
 Every message goes through this pipeline:
 
-```
-User message
-    |
-    v
-load_history ── load last 20 messages from current session
-    |
-    v
-detect_intent ── LLM classifies: selfcare | journal | therapy | general
-    |
-    v
-crisis_check ── regex patterns for crisis language (runs BEFORE intent)
-    |
-    v
-route to handler:
-    |
-    ├── crisis ──── return 988/crisis resources immediately
-    ├── selfcare ── classify sub-type (mood/advice/reminder)
-    |               ├── mood: log mood, get CBT advice if negative
-    |               ├── advice: RAG search → evidence-based response
-    |               └── reminder: set wellness reminder
-    ├── journal ─── classify (prompt_request/entry)
-    |               ├── prompt: generate reflective question
-    |               └── entry: save + extract mood/themes/entities/sentiment
-    ├── therapy ─── classify (log/prepare/review/pattern)
-    |               ├── log: parse notes → structured session
-    |               ├── prepare: summarize data for upcoming session
-    |               ├── review: display past sessions
-    |               └── pattern: cross-session analysis
-    └── general ─── warm conversational response with context
-    |
-    v
-enrich_response ── (only for negative moods)
-    |               1. gather moods + journals + therapy context
-    |               2. LLM synthesizes "Based on your history" section
-    |               3. RAG generates "What science says" section
-    |               4. append to response with --- separator
-    |
-    v
-save_messages ── persist user + assistant messages with session_id
-    |            log passive mood if detected (source: chat)
-    v
-  END
+```mermaid
+flowchart TD
+    Input[User Message] --> Load[Load History<br/><i>last 20 messages from session</i>]
+    Load --> Intent[Detect Intent<br/><i>LLM classifies message</i>]
+    Intent --> Crisis{Crisis<br/>Check}
+    
+    Crisis -->|Crisis detected| CrisisNode[Return 988 Resources]
+    Crisis -->|Safe| Route{Route by Intent}
+    
+    Route -->|selfcare| Selfcare[Selfcare Node]
+    Route -->|journal| JournalNode[Journal Node]
+    Route -->|therapy| TherapyNode[Therapy Node]
+    Route -->|general| General[General Chat]
+
+    subgraph Selfcare Node
+        Selfcare --> SC_Class{Sub-classify}
+        SC_Class -->|mood| LogMood[Log Mood + CBT Advice]
+        SC_Class -->|advice| RAG[RAG Search Knowledge Base]
+        SC_Class -->|reminder| Reminder[Set Reminder]
+    end
+
+    subgraph Journal Node
+        JournalNode --> J_Class{Sub-classify}
+        J_Class -->|prompt| GenPrompt[Generate Reflective Question]
+        J_Class -->|entry| SaveEntry[Save + Extract<br/>mood, themes, entities,<br/>sentiment, summary]
+    end
+
+    subgraph Therapy Node
+        TherapyNode --> T_Class{Sub-classify}
+        T_Class -->|log| ParseNotes[Parse Notes → Structured Session]
+        T_Class -->|prepare| PrepSession[Summarize Data for Next Session]
+        T_Class -->|review| ShowSessions[Display Past Sessions]
+        T_Class -->|pattern| Analyze[Cross-Session Pattern Analysis]
+    end
+
+    CrisisNode --> Enrich
+    LogMood --> Enrich
+    RAG --> Enrich
+    Reminder --> Enrich
+    GenPrompt --> Enrich
+    SaveEntry --> Enrich
+    ParseNotes --> Enrich
+    PrepSession --> Enrich
+    ShowSessions --> Enrich
+    Analyze --> Enrich
+    General --> Enrich
+
+    Enrich[Enrich Response<br/><i>only for negative moods</i>]
+    Enrich --> EnrichDetail["1. Gather moods + journals + therapy<br/>2. LLM → Based on your history<br/>3. RAG → What science says<br/>4. Append to response"]
+    EnrichDetail --> Save[Save Messages<br/><i>persist with session_id<br/>log passive mood</i>]
+    Save --> End([END])
 ```
 
-### Database Schema
+### Data Model
 
+```mermaid
+erDiagram
+    users {
+        string id PK
+        string email UK
+        string name
+        string password_hash
+        datetime created_at
+    }
+
+    chat_sessions {
+        int id PK
+        string user_id FK
+        string title
+        datetime created_at
+    }
+
+    messages {
+        int id PK
+        string user_id FK
+        int session_id FK
+        string role
+        text content
+        string intent
+        string tool_class
+        datetime created_at
+    }
+
+    journal_entries {
+        int id PK
+        string user_id FK
+        text content
+        string mood_label
+        text themes "JSON array"
+        text entities "JSON array"
+        float sentiment_score "-1.0 to 1.0"
+        text summary
+        datetime created_at
+    }
+
+    mood_logs {
+        int id PK
+        string user_id FK
+        text message
+        string mood_label
+        string source_type "chat | journal | explicit"
+        int source_id
+        string confidence
+        datetime timestamp
+    }
+
+    therapy_sessions {
+        int id PK
+        string user_id FK
+        int session_number
+        string date
+        text issues_discussed "JSON array"
+        text learnings
+        text action_items "JSON array"
+        text techniques "JSON array"
+        datetime created_at
+    }
+
+    reminders {
+        int id PK
+        string user_id FK
+        text message
+        string frequency
+        string time_of_day
+        boolean active
+    }
+
+    users ||--o{ chat_sessions : has
+    users ||--o{ messages : sends
+    users ||--o{ journal_entries : writes
+    users ||--o{ mood_logs : tracks
+    users ||--o{ therapy_sessions : logs
+    users ||--o{ reminders : sets
+    chat_sessions ||--o{ messages : contains
 ```
-users ─────────── id, email, name, password_hash, created_at
-chat_sessions ─── id, user_id, title, created_at
-messages ──────── id, user_id, session_id, role, content, intent, tool_class, created_at
-journal_entries ── id, user_id, content, mood_label, themes (JSON), entities (JSON),
-                   sentiment_score, summary, created_at
-mood_logs ─────── id, user_id, message, mood_label, source_type, source_id, confidence
-therapy_sessions ─ id, user_id, session_number, date, issues_discussed (JSON),
-                   learnings, action_items (JSON), techniques (JSON)
-reminders ─────── id, user_id, message, frequency, time_of_day, active
+
+### Split Response Architecture
+
+```mermaid
+flowchart LR
+    subgraph Input
+        Msg[User Message<br/><i>I feel anxious again</i>]
+        Mood[Detected Mood: anxious]
+    end
+
+    subgraph History["Based on your history"]
+        M[Mood Trends<br/><i>anxious 3x this week</i>]
+        J[Journal Entries<br/><i>work pressure, sleep issues</i>]
+        T[Therapy Sessions<br/><i>Session 3: cognitive reframing</i>]
+        Synth[LLM Synthesis]
+        M --> Synth
+        J --> Synth
+        T --> Synth
+    end
+
+    subgraph Science["What science says"]
+        Query[Refined Query]
+        VDB[(ChromaDB)]
+        LLM2[LLM + Citations]
+        Query --> VDB
+        VDB -->|top 6 chunks| LLM2
+    end
+
+    Msg --> History
+    Msg --> Science
+    History --> Response[Combined Response<br/>with --- separator]
+    Science --> Response
 ```
 
 ---
