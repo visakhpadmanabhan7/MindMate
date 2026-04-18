@@ -10,6 +10,7 @@ from app.prompts.prompt_texts import (
     GENERAL_CHAT_PROMPT,
     INTENT_DETECTOR,
 )
+from app.tools.insights.cross_reference import get_therapy_aware_feedback
 from app.tools.journaling.journal_store import save_journal_entry
 from app.tools.journaling.journalling_prompt_generator import generate_prompt
 from app.tools.journaling.prompt_utils import classify_journal_input
@@ -24,7 +25,6 @@ from app.tools.selfcare.rag_tool import get_cbt_recommendation
 from app.tools.selfcare.selcare_input_classifier import classify_selfcare_input
 from app.tools.selfcare.wellness_reminder import set_reminder
 from app.tools.therapy.therapy_router import handle_therapy
-from app.tools.insights.cross_reference import get_therapy_aware_feedback
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 class State(BaseModel):
     input: str
     user_id: str
+    session_id: int | None = None
     intent: str | None = None
     response: str | None = None
     tool_class: str | None = None
@@ -40,7 +41,7 @@ class State(BaseModel):
 
 
 async def load_history(state: State) -> State:
-    history = await get_recent_messages(state.user_id, limit=20)
+    history = await get_recent_messages(state.user_id, limit=20, session_id=state.session_id)
     return state.model_copy(update={"message_history": history})
 
 
@@ -240,6 +241,7 @@ async def save_messages(state: State) -> State:
         role="user",
         content=state.input,
         intent=state.intent,
+        session_id=state.session_id,
     )
 
     if state.response:
@@ -249,6 +251,7 @@ async def save_messages(state: State) -> State:
             content=state.response,
             intent=state.intent,
             tool_class=state.tool_class,
+            session_id=state.session_id,
         )
 
     # Log passive mood (if detected and not already logged explicitly)

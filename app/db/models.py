@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, String, Table, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, MetaData, String, Table, Text
 
 metadata = MetaData()
 
@@ -24,6 +24,8 @@ journal_entries = Table(
     Column("mood_label", String, nullable=True),
     Column("themes", Text, nullable=True),    # JSON list e.g. ["work stress", "relationships"]
     Column("entities", Text, nullable=True),   # JSON list e.g. ["Sarah", "gym", "therapy"]
+    Column("sentiment_score", Float, nullable=True),
+    Column("summary", Text, nullable=True),
 )
 
 mood_logs = Table(
@@ -39,11 +41,22 @@ mood_logs = Table(
     Column("confidence", String, nullable=True),     # "high", "medium", "low"
 )
 
+chat_sessions = Table(
+    "chat_sessions",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("user_id", String, default="anonymous"),
+    Column("title", String, nullable=True),
+    Column("created_at", DateTime),
+    Column("updated_at", DateTime, nullable=True),
+)
+
 messages = Table(
     "messages",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("user_id", String, default="anonymous"),
+    Column("session_id", Integer, nullable=True),
     Column("role", String, nullable=False),
     Column("content", Text, nullable=False),
     Column("intent", String, nullable=True),

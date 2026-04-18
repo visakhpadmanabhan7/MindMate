@@ -3,9 +3,9 @@ import re
 from collections import defaultdict
 
 from langchain_classic.chains import RetrievalQA
+from langchain_core.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
 
 from app.core.config import get_settings
 from app.core.openai_utils import run_classification_prompt
@@ -35,8 +35,12 @@ def _clean_title(filename: str) -> str:
 QA_PROMPT = PromptTemplate.from_template(
     "You are a supportive mental health assistant grounded in evidence-based CBT techniques.\n"
     "Use the following context from mental health resources to answer the question.\n"
+    "If the context is not relevant to the question, say: "
+    "\"I don't have specific information on that in my knowledge base.\"\n"
     "Be concise (3-5 key points max), warm, and actionable.\n"
-    "Include inline citations like [1], [2] referencing the sources.\n\n"
+    "Include inline citations like [1], [2] referencing the sources.\n"
+    "End with 2-3 follow-up questions the user might want to explore, "
+    "formatted as a brief list under \"**You might also explore:**\"\n\n"
     "Context:\n{context}\n\n"
     "Question: {question}\n\n"
     "Answer (concise, with inline citations):"
@@ -58,6 +62,16 @@ async def get_cbt_recommendation(raw_input: str, debug: bool = False) -> str:
     refined_query = await run_classification_prompt(query_prompt, "")
 
     vectorstore = get_vectorstore()
+
+    # Check relevance before full RAG chain
+    top_results = vectorstore.similarity_search_with_score(refined_query, k=1)
+    if not top_results or top_results[0][1] > 1.5:
+        return (
+            "I don't have specific information on that in my knowledge base. "
+            "You might want to discuss this with a mental health professional "
+            "who can provide personalized guidance."
+        )
+
     retriever = vectorstore.as_retriever(search_kwargs={"k": 6})
 
     llm = _get_langchain_llm()

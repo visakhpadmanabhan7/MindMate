@@ -40,6 +40,8 @@ async def get_journal_entries(
             "mood_label": row.mood_label,
             "themes": json.loads(row.themes or "[]"),
             "entities": json.loads(row.entities or "[]"),
+            "sentiment_score": row.sentiment_score if hasattr(row, "sentiment_score") else None,
+            "summary": row.summary if hasattr(row, "summary") else None,
             "created_at": str(row.created_at) if row.created_at else "",
             "updated_at": str(row.updated_at) if row.updated_at else None,
         })

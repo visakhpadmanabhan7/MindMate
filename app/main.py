@@ -5,25 +5,34 @@ import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, EmailStr
 
 from app.core.config import get_settings
-from app.db.message_store import get_recent_messages, update_message
+from app.db import message_store
+from app.db.message_store import (
+    create_session,
+    delete_session,
+    get_recent_messages,
+    search_messages,
+    update_message,
+    update_session_title,
+)
 from app.db.setup_db import setup
 from app.db.user_manager import authenticate_user, create_user, get_user_by_email
 from app.db.view_records import fetch_sample_records
 from app.langraph_runner import app_flow
 from app.tools.journaling.journal_analytics import get_journal_entries, get_journal_themes
 from app.tools.journaling.journal_store import (
+    delete_journal_entry,
     get_journal_entry_by_id,
     save_journal_entry_direct,
     update_journal_entry,
 )
 from app.tools.selfcare.mood_analytics import get_mood_analytics, get_mood_detail
-from app.tools.therapy.therapy_store import get_sessions, update_session
+from app.tools.therapy.therapy_store import get_sessions, save_session, update_session
 
 settings = get_settings()
 
@@ -51,6 +60,7 @@ app.add_middleware(
 class ChatRequest(BaseModel):
     message: str
     email: EmailStr
+    session_id: int | None = None
 
 
 class UserCreateRequest(BaseModel):
@@ -95,6 +105,7 @@ async def chat(req: ChatRequest):
     result = await app_flow.ainvoke({
         "input": req.message,
         "user_id": user.id,
+        "session_id": req.session_id,
     })
     return {
         "response": result["response"],
@@ -113,11 +124,20 @@ async def chat_stream(req: ChatRequest):
     result = await app_flow.ainvoke({
         "input": req.message,
         "user_id": user.id,
+        "session_id": req.session_id,
     })
 
     response_text = result.get("response", "")
     intent = result.get("intent", "")
     tool_class = result.get("tool_class", "")
+
+    # Auto-title session from first message
+    if req.session_id:
+        session_msgs = await get_recent_messages(user.id, limit=3, session_id=req.session_id)
+        # If this is the first exchange (2 messages: user + assistant), set title
+        if len(session_msgs) <= 2:
+            title = req.message[:50] + ("..." if len(req.message) > 50 else "")
+            await update_session_title(req.session_id, user.id, title)
 
     async def event_generator():
         yield f"data: {json.dumps({'type': 'meta', 'intent': intent, 'tool_class': tool_class})}\n\n"
@@ -131,6 +151,40 @@ async def chat_stream(req: ChatRequest):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
     )
+
+
+# --- Chat Sessions ---
+
+
+class SessionCreateRequest(BaseModel):
+    email: EmailStr
+
+
+@app.post("/api/v1/chat/sessions")
+async def create_chat_session(req: SessionCreateRequest):
+    user = await get_user_by_email(req.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return await create_session(user.id)
+
+
+@app.get("/api/v1/chat/sessions")
+async def list_chat_sessions(email: str = Query(...), limit: int = Query(50, ge=1, le=200)):
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"sessions": await message_store.get_sessions(user.id, limit=limit)}
+
+
+@app.delete("/api/v1/chat/sessions/{session_id}")
+async def remove_chat_session(session_id: int, email: str = Query(...)):
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    deleted = await delete_session(session_id, user.id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"status": "deleted", "id": session_id}
 
 
 # --- Users ---
@@ -186,6 +240,17 @@ async def edit_journal_entry(entry_id: int, req: JournalRequest):
     if not result:
         raise HTTPException(status_code=404, detail="Entry not found")
     return result
+
+
+@app.delete("/api/v1/journal/entries/{entry_id}")
+async def remove_journal_entry(entry_id: int, email: str = Query(...)):
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    deleted = await delete_journal_entry(entry_id, user.id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"status": "deleted", "id": entry_id}
 
 
 @app.get("/api/v1/journal/entries/{entry_id}")
@@ -245,6 +310,30 @@ async def mood_detail_endpoint(mood_id: int, email: str = Query(...)):
 # --- Therapy Sessions ---
 
 
+class TherapyCreateRequest(BaseModel):
+    email: EmailStr
+    issues_discussed: list[str] = []
+    learnings: str = ""
+    action_items: list[str] = []
+    techniques: list[str] = []
+    date: str | None = None
+
+
+@app.post("/api/v1/therapy/sessions")
+async def create_therapy_session(req: TherapyCreateRequest):
+    user = await get_user_by_email(req.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return await save_session(
+        user_id=user.id,
+        issues_discussed=req.issues_discussed,
+        learnings=req.learnings,
+        action_items=req.action_items,
+        techniques=req.techniques,
+        date=req.date,
+    )
+
+
 @app.get("/api/v1/therapy/sessions")
 async def therapy_sessions_endpoint(
     email: str = Query(...),
@@ -275,11 +364,25 @@ async def edit_therapy_session(session_id: int, req: TherapyUpdateRequest):
 async def messages_endpoint(
     email: str = Query(...),
     limit: int = Query(50, ge=1, le=200),
+    session_id: int | None = Query(None),
 ):
     user = await get_user_by_email(email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"messages": await get_recent_messages(user.id, limit=limit)}
+    return {"messages": await get_recent_messages(user.id, limit=limit, session_id=session_id)}
+
+
+@app.get("/api/v1/messages/search")
+async def search_messages_endpoint(
+    email: str = Query(...),
+    q: str | None = Query(None),
+    intent: str | None = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+):
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"messages": await search_messages(user.id, query=q, intent=intent, limit=limit)}
 
 
 @app.put("/api/v1/messages/{message_id}")
@@ -291,6 +394,19 @@ async def edit_message(message_id: int, req: MessageUpdateRequest):
     if not result:
         raise HTTPException(status_code=404, detail="Message not found or not editable")
     return result
+
+
+# --- Weekly Summary ---
+
+
+@app.get("/api/v1/summary/weekly")
+async def weekly_summary_endpoint(email: str = Query(...)):
+    from app.tools.insights.weekly_summary import generate_weekly_summary
+
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return await generate_weekly_summary(user.id)
 
 
 # --- Data Export ---
@@ -357,9 +473,10 @@ async def upload_document(file: UploadFile = File(...)):
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    from langchain_chroma import Chroma
     from langchain_community.document_loaders import PyPDFLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
-    from langchain_chroma import Chroma
+
     from app.core.vectorstore import get_embedding_model
 
     loader = PyPDFLoader(str(dest))

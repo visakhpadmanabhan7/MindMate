@@ -32,7 +32,7 @@ async def get_mood_analytics(user_id: str) -> dict:
     ]
 
     distribution: dict[str, int] = {}
-    sources: dict[str, int] = {}
+    sources: dict[str, int] = {"chat": 0, "journal": 0, "explicit": 0}
     for row in rows:
         label = row.mood_label or "unknown"
         distribution[label] = distribution.get(label, 0) + 1

@@ -136,8 +136,10 @@ Be specific — reference session numbers and specific themes. Keep it supportiv
 JOURNAL_ANALYZER = """
 Analyze this journal entry and return a JSON object with exactly these fields:
 - "mood": a single word describing the dominant mood (e.g., happy, sad, anxious, calm, stressed, grateful, angry, hopeful, tired, overwhelmed). Use "neutral" if no clear mood.
-- "themes": a list of 1-5 short phrases describing the main themes/topics (e.g., "work stress", "relationship conflict", "self-improvement", "family", "health anxiety")
+- "themes": a list of 1-5 specific, actionable phrases describing the main themes (e.g., "fear of job loss", "conflict with partner about finances", "progress on meditation habit"). Be specific, not vague.
 - "entities": a list of notable people, places, activities, or things mentioned (e.g., "Sarah", "gym", "therapy", "job interview")
+- "sentiment_score": a float from -1.0 (very negative) to 1.0 (very positive), representing the overall emotional tone. 0.0 is neutral.
+- "summary": a single sentence summarizing the entry's core message or feeling.
 
 Return ONLY the JSON object, no explanation.
 """
@@ -179,4 +181,28 @@ CBT research:
 {cbt_context}
 
 Keep it warm, 3-5 sentences. Use "In Session #X, you discussed..." format.
+"""
+
+# --- Split Response: History Synthesis ---
+
+HISTORY_SYNTHESIS_PROMPT = """
+The user just said: "{current_input}"
+Their current mood is: {mood}
+
+Synthesize the following personal data into a warm, cohesive "Based on your history" paragraph. Connect the dots across their moods, journals, and therapy sessions to show you understand their patterns.
+
+{mood_context}
+{journal_context}
+{therapy_context}
+
+Guidelines:
+- Reference specific data: "You've felt anxious 3 times this week", "In your journal on Monday, you wrote about..."
+- If therapy sessions are relevant, mention the session number and what was discussed
+- Point out patterns: "This seems to come up when...", "Last time this happened, you found that..."
+- If they've made progress, acknowledge it
+- Keep it to 2-4 sentences, warm and personal
+- If there's very little history, keep it shorter
+- Do NOT give advice here — that goes in the science section
+
+Return ONLY the synthesis paragraph, nothing else.
 """
