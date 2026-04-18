@@ -27,6 +27,7 @@ import {
   Trash2,
   PanelLeftClose,
   PanelLeft,
+  Mic,
 } from "lucide-react";
 import { Markdown } from "@/components/markdown";
 
@@ -62,6 +63,20 @@ export default function ChatPage() {
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [showSessions, setShowSessions] = useState(true);
   const [deletingSession, setDeletingSession] = useState<number | null>(null);
+
+  // Voice input
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    setSpeechSupported(
+      "SpeechRecognition" in window || "webkitSpeechRecognition" in window
+    );
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
 
   useEffect(() => {
     if (!email) {
@@ -140,8 +155,41 @@ export default function ChatPage() {
     }
   }, [messages, streaming, editingIdx]);
 
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.start();
+    setIsListening(true);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !email || loading) return;
+    if (isListening) recognitionRef.current?.stop();
 
     const userMsg = input.trim();
     setInput("");
@@ -500,6 +548,18 @@ export default function ChatPage() {
               className="min-h-[44px] max-h-32 resize-none"
               rows={1}
             />
+            {speechSupported && (
+              <Button
+                onClick={toggleListening}
+                disabled={loading}
+                size="icon"
+                variant={isListening ? "destructive" : "outline"}
+                className={isListening ? "animate-pulse" : ""}
+                type="button"
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               onClick={handleSend}
               disabled={!input.trim() || loading}

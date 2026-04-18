@@ -2,22 +2,29 @@
 name = "mindmate"
 version = "2.0.0"
 description = "AI-powered mental health companion with journaling, mood tracking, CBT advice, and therapy session support"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "openai",
+    "groq",
     "langgraph",
     "langchain",
     "langchain-openai",
+    "langchain-groq",
+    "langchain-huggingface",
+    "sentence-transformers",
     "langchain-community",
     "langchain-core",
+    "langchain-classic",
+    "langchain-text-splitters",
     "tiktoken",
     "sqlalchemy",
     "aiosqlite",
     "chromadb",
     "langchain-chroma",
     "pypdf",
+    "bcrypt",
     "pydantic",
     "pydantic-settings",
     "python-dotenv",
@@ -26,10 +33,13 @@ dependencies = [
     "langfuse>=3.2.0",
 ]
 
-[tool.mindmate]
-version = "2.0.0"
-description = "MindMate mental health agent"
-entrypoint = "app.main:app"
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "ruff",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

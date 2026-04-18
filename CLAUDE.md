@@ -5,11 +5,11 @@ AI-powered mental health companion with journaling, mood tracking, CBT-based adv
 ## Commands
 
 ```bash
-source venv/bin/activate && uvicorn app.main:app --reload --port 8000  # Backend
+uv run uvicorn app.main:app --reload --port 8000                       # Backend
 cd frontend && npm run dev                                              # Frontend (port 3000)
-python -m app.scripts.index_pdfs                                        # Index PDFs into ChromaDB
-pytest tests/ -v                                                        # Tests
-ruff check app/ tests/                                                  # Lint backend
+uv run python -m app.scripts.index_pdfs                                 # Index PDFs into ChromaDB
+uv run pytest tests/ -v                                                 # Tests
+uv run ruff check app/ tests/                                           # Lint backend
 cd frontend && npm run build                                            # Build frontend
 ```
 

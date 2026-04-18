@@ -85,20 +85,17 @@ When you share something emotionally significant, MindMate responds with two sec
 
 - Python 3.11+
 - Node.js 22+
+- [uv](https://docs.astral.sh/uv/) (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`)
 - A [Groq API key](https://console.groq.com) (free)
 
-### 1. Clone and setup backend
+### 1. Clone and setup
 
 ```bash
 git clone https://github.com/visakhpadmanabhan7/MindMate.git
 cd MindMate
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+# Install Python dependencies (uv handles the virtual environment automatically)
+uv sync
 
 # Configure environment
 cp .env.example .env
@@ -108,7 +105,7 @@ cp .env.example .env
 ### 2. Index knowledge base (first time only)
 
 ```bash
-python -m app.scripts.index_pdfs
+uv run python -m app.scripts.index_pdfs
 ```
 
 This indexes the CBT/mental health PDFs in `app/data/` into ChromaDB for RAG.
@@ -116,7 +113,7 @@ This indexes the CBT/mental health PDFs in `app/data/` into ChromaDB for RAG.
 ### 3. Start backend
 
 ```bash
-uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload
 ```
 
 Backend runs at http://localhost:8000. API docs at http://localhost:8000/docs.
@@ -314,9 +311,8 @@ docker-compose.yml              # Local Docker setup
 
 ```bash
 # Backend
-source venv/bin/activate
-pytest tests/ -v
-ruff check app/ tests/
+uv run pytest tests/ -v
+uv run ruff check app/ tests/
 
 # Frontend
 cd frontend
