@@ -5,6 +5,7 @@ AI-powered mental health companion with journaling, mood tracking, CBT-based adv
 ## Commands
 
 ```bash
+uv sync --extra dev                                                     # Install deps incl. pytest/ruff (once)
 uv run uvicorn app.main:app --reload --port 8000                       # Backend
 cd frontend && npm run dev                                              # Frontend (port 3000)
 uv run python -m app.scripts.index_pdfs                                 # Index PDFs into ChromaDB
@@ -18,7 +19,7 @@ cd frontend && npm run build                                            # Build 
 - **Backend:** FastAPI + LangGraph + Groq (Llama 3.3 70B) + SQLite + ChromaDB
 - **Frontend:** Next.js 16 + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui (base-ui)
 - **LLM:** Groq free tier by default, OpenAI as fallback via `LLM_PROVIDER` config
-- **Embeddings:** sentence-transformers (all-MiniLM-L6-v2) — runs locally, no API cost
+- **Embeddings:** fastembed (BAAI/bge-small-en-v1.5, ONNX) — runs locally, no API cost
 - **Database:** SQLite at `app/data/mindmate.db`, PostgreSQL-ready via `DATABASE_URL`
 - **Vectors:** ChromaDB at `app/data/chroma/`, pgvector-ready for production
 

@@ -82,7 +82,7 @@ Runs before all other processing. Non-negotiable safety layer.
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS v4, shadcn/ui (base-ui), Recharts |
 | Backend | FastAPI, LangGraph, LangChain, Pydantic |
 | LLM | Groq (Llama 3.3 70B) free tier, OpenAI as fallback |
-| Embeddings | BAAI/bge-small-en-v1.5 via sentence-transformers (local, no API cost) |
+| Embeddings | BAAI/bge-small-en-v1.5 via fastembed (local ONNX, no API cost) |
 | Database | SQLite (local), PostgreSQL-ready via config |
 | Vector Store | ChromaDB (local), pgvector-ready for production |
 | Package Manager | uv (Python), npm (Node) |
@@ -105,8 +105,8 @@ Runs before all other processing. Non-negotiable safety layer.
 git clone https://github.com/visakhpadmanabhan7/MindMate.git
 cd MindMate
 
-# Install Python dependencies
-uv sync
+# Install Python dependencies (--extra dev adds pytest + ruff)
+uv sync --extra dev
 
 # Configure environment
 cp .env.example .env
@@ -538,10 +538,14 @@ docker-compose.yml               # Local Docker setup
 ## Development
 
 ```bash
+uv sync --extra dev              # Install dev tools (pytest, ruff) — once
 uv run pytest tests/ -v          # Run 22 backend tests
 uv run ruff check app/ tests/    # Lint backend
 cd frontend && npm run build     # Type-check + build frontend
 ```
+
+Dependencies are managed solely via `pyproject.toml` + `uv.lock` — there is no
+`requirements.txt`. Docker and CI install with `uv sync --frozen`.
 
 ## Disclaimer
 

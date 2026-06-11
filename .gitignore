@@ -30,6 +30,11 @@ Thumbs.db
 # Vector store
 app/data/chroma/
 
+# Runtime PDF uploads (seed knowledge-base PDFs stay tracked;
+# use `git add -f` to commit a new seed document)
+app/data/*.pdf
+app/data/*.PDF
+
 # Node / Frontend
 node_modules/
 .next/

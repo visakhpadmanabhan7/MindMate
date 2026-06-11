@@ -2,6 +2,11 @@ import json
 import logging
 from datetime import datetime, timezone
 
+from sqlalchemy import desc, func, insert, select, update
+
+from app.db.engine import engine
+from app.db.models import therapy_sessions
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,11 +18,6 @@ def _safe_json_loads(data: str | None, default: list | None = None) -> list:
     except (json.JSONDecodeError, TypeError):
         logger.warning("Failed to parse JSON: %s", data[:100])
         return default or []
-
-from sqlalchemy import desc, func, insert, select, update
-
-from app.db.engine import engine
-from app.db.models import therapy_sessions
 
 
 async def save_session(

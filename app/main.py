@@ -1,4 +1,3 @@
-import glob
 import json
 import os
 import shutil
@@ -457,7 +456,7 @@ async def list_documents():
     """List all PDF documents with metadata."""
     from app.core.vectorstore import get_document_chunk_count
 
-    pdf_files = glob.glob(str(PDF_DIR / "*.pdf"))
+    pdf_files = [str(p) for p in PDF_DIR.iterdir() if p.suffix.lower() == ".pdf"]
     docs = []
     for path in sorted(pdf_files):
         name = os.path.basename(path)
@@ -478,7 +477,9 @@ async def upload_document(file: UploadFile = File(...)):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
 
-    dest = PDF_DIR / file.filename
+    # Strip any client-supplied path components to keep writes inside PDF_DIR
+    filename = os.path.basename(file.filename)
+    dest = PDF_DIR / filename
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
@@ -491,7 +492,7 @@ async def upload_document(file: UploadFile = File(...)):
     loader = PyPDFLoader(str(dest))
     docs = loader.load()
     for doc in docs:
-        doc.metadata["source_doc"] = file.filename
+        doc.metadata["source_doc"] = filename
         doc.metadata["page_number"] = doc.metadata.get("page", 0) + 1
 
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=200)
@@ -504,13 +505,16 @@ async def upload_document(file: UploadFile = File(...)):
         persist_directory=settings.CHROMA_PATH,
     )
 
-    return {"status": "indexed", "filename": file.filename, "chunks": len(chunks), "pages": len(docs)}
+    return {"status": "indexed", "filename": filename, "chunks": len(chunks), "pages": len(docs)}
 
 
 @app.delete("/api/v1/knowledge/{filename}")
 async def delete_document(filename: str):
     """Delete a PDF and remove its vectors from the knowledge base."""
     from app.core.vectorstore import delete_document_vectors
+
+    if os.path.basename(filename) != filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     filepath = PDF_DIR / filename
     if not filepath.exists():

@@ -1,7 +1,7 @@
 import logging
 
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
 from app.core.config import get_settings
 
@@ -13,17 +13,11 @@ _embedding_model = None
 _vectorstore = None
 
 
-def get_embedding_model() -> HuggingFaceEmbeddings:
+def get_embedding_model() -> FastEmbedEmbeddings:
     global _embedding_model
     if _embedding_model is None:
-        encode_kwargs = {}
-        # BGE models benefit from a query instruction prefix
-        if "bge" in settings.EMBEDDING_MODEL.lower():
-            encode_kwargs["normalize_embeddings"] = True
-        _embedding_model = HuggingFaceEmbeddings(
-            model_name=settings.EMBEDDING_MODEL,
-            encode_kwargs=encode_kwargs,
-        )
+        # fastembed normalizes BGE embeddings by default
+        _embedding_model = FastEmbedEmbeddings(model_name=settings.EMBEDDING_MODEL)
     return _embedding_model
 
 
@@ -65,7 +59,9 @@ def search_knowledge_base(query: str, k: int = 5) -> list[dict]:
             "content": doc.page_content.strip(),
             "source_doc": doc.metadata.get("source_doc", "unknown"),
             "page_number": doc.metadata.get("page_number", None),
-            "relevance": round(1 - score, 3) if score < 2 else round(score, 3),
+            # Chroma returns squared L2 distance; embeddings are unit-normalized,
+            # so d2 = 2 - 2*cos_sim and cosine similarity = 1 - d2/2
+            "relevance": round(max(0.0, 1 - score / 2), 3),
         })
     return chunks
 

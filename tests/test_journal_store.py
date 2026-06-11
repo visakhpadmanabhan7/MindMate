@@ -1,7 +1,27 @@
+import json
+
 import pytest
 
 from app.tools.journaling.journal_analytics import get_journal_entries
 from app.tools.journaling.journal_store import save_journal_entry
+
+
+class _FakeLLM:
+    async def extract(self, system_prompt: str, user_input: str) -> str:
+        return json.dumps({
+            "mood": "neutral",
+            "themes": [],
+            "entities": [],
+            "sentiment_score": 0.0,
+            "summary": "",
+        })
+
+
+@pytest.fixture(autouse=True)
+def mock_llm(monkeypatch):
+    monkeypatch.setattr(
+        "app.tools.journaling.journal_store.get_llm", lambda: _FakeLLM()
+    )
 
 
 @pytest.mark.asyncio
