@@ -15,7 +15,7 @@ You chat naturally with MindMate. Behind the scenes, a LangGraph state machine d
 - Multiple chat sessions (create, switch, delete)
 - LLM-generated session titles
 - Voice input via Web Speech API
-- Message editingss
+- Message editing
 
 ### Mood Tracking
 - **Passive detection** — picks up emotional signals from any message, no explicit logging needed
